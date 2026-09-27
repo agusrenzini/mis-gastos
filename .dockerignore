@@ -1,0 +1,5 @@
+backend/target
+backend/.env
+design-reference
+frontend/node_modules
+.git

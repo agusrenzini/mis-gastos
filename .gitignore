@@ -1,0 +1,20 @@
+# Compilación
+backend/target/
+*.class
+*.jar
+*.log
+
+# Secretos: NUNCA se suben
+.env
+*.env
+!.env.example
+
+# Node (solo se usa para los tests del parser)
+node_modules/
+
+# IDEs y sistema operativo
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db

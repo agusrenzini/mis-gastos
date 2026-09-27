@@ -1,0 +1,9 @@
+{
+  "name": "mis-gastos-frontend",
+  "private": true,
+  "type": "module",
+  "description": "Solo se usa para correr los tests del parser de voz. La app no necesita Node.",
+  "scripts": {
+    "test": "node --test"
+  }
+}

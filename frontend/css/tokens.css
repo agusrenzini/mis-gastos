@@ -1,0 +1,65 @@
+/* Design system "Serene Mint" (ver design-reference/.../serene_mint/DESIGN.md).
+   Todos los colores, radios y sombras de la app salen de acá. */
+:root {
+  /* Marca */
+  --color-primary: #006948;
+  --color-primary-hover: #005137;
+  --color-primary-bright: #059669;
+  --color-primary-container: #00855d;
+  --color-mint: #85f8c4;
+  --color-mint-soft: #d1fae5;
+  --color-mint-tint: rgba(16, 185, 129, 0.1);
+  --color-mint-text: #047857;
+  --color-secondary: #006398;
+  --color-secondary-soft: #e0f2fe;
+  --color-tertiary: #f59e0b;
+
+  /* Superficies */
+  --color-bg: #f8f9ff;
+  --color-surface: #ffffff;
+  --color-surface-low: #eff4ff;
+  --color-surface-container: #e5eeff;
+  --color-surface-high: #dce9ff;
+
+  /* Texto y bordes */
+  --color-text: #0b1c30;
+  --color-text-body: #334155;
+  --color-text-muted: #64748b;
+  --color-border: #e2e8f0;
+
+  /* Estados */
+  --color-danger: #ba1a1a;
+  --color-danger-soft: #ffdad6;
+  --color-up: #b42318;
+  --color-up-bg: #fee4e2;
+  --color-down: #047857;
+  --color-down-bg: #d1fae5;
+  --color-focus: #0284c7;
+
+  /* Tipografía */
+  --font: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* Radios */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+  --r-full: 9999px;
+
+  /* Espaciado */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  /* Sombras muy suaves */
+  --shadow-1: 0 2px 8px -2px rgba(15, 23, 42, 0.04), 0 1px 3px -1px rgba(15, 23, 42, 0.02);
+  --shadow-2: 0 10px 25px -5px rgba(15, 23, 42, 0.06), 0 4px 10px -3px rgba(15, 23, 42, 0.03);
+  --shadow-fab: 0 8px 20px -4px rgba(5, 150, 105, 0.35);
+
+  /* Layout */
+  --content-width: 480px;
+  --nav-height: 68px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
