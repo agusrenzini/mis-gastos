@@ -26,6 +26,26 @@ export function topBar(title, { back = null, action = '' } = {}) {
     </header>`;
 }
 
+/** Selector de mes: ‹ Octubre 2026 ›. Las pantallas escuchan data-action="prev-month" / "next-month". */
+export function monthNav(label, { nextDisabled = false } = {}) {
+  return `
+    <div class="month-card__nav">
+      <button type="button" class="icon-button icon-button--soft" data-action="prev-month" aria-label="Mes anterior">${icon('chevron-left')}</button>
+      <span class="pill pill--lg">${icon('calendar')}${escapeHtml(label)}</span>
+      <button type="button" class="icon-button icon-button--soft" data-action="next-month" aria-label="Mes siguiente" ${nextDisabled ? 'disabled' : ''}>${icon('chevron-right')}</button>
+    </div>`;
+}
+
+/** Pestañas Gastos / Ingresos de la sección Movimientos. */
+export function movementTabs(active) {
+  const tab = (key, href, label) => `
+    <a class="segment-button" href="${href}" ${active === key ? 'aria-current="page"' : ''}>${label}</a>`;
+  return `
+    <nav class="segmented segmented--tabs" aria-label="Tipo de movimiento">
+      ${tab('gastos', '#/movimientos', 'Gastos')}${tab('ingresos', '#/ingresos', 'Ingresos')}
+    </nav>`;
+}
+
 export function loadingState(text = 'Cargando…') {
   return `<div class="state-card" role="status"><span class="spinner" aria-hidden="true"></span>${text}</div>`;
 }

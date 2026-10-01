@@ -26,6 +26,15 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
     List<Expense> findTop5ByUserIdOrderByDateDescCreatedAtDesc(Long userId);
 
+    /** Gastos del usuario en un rango que todavía no pagan ningún gasto fijo (para vincular sin duplicar). */
+    @Query("""
+            select e from Expense e
+            where e.userId = :userId and e.date between :from and :to
+              and not exists (select 1 from RecurringObligation o where o.expenseId = e.id)
+            order by e.date desc, e.createdAt desc""")
+    List<Expense> findUnlinkedBetween(@Param("userId") Long userId, @Param("from") LocalDate from,
+                                      @Param("to") LocalDate to);
+
     // --- Solo para el panel de administración: resúmenes, nunca el detalle de los gastos ---
 
     interface UserActivity {

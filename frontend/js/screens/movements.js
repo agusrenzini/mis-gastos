@@ -3,7 +3,7 @@ import { api } from '../api.js';
 import { getCategory, getPaymentMethod } from '../categories.js';
 import { addMonths, monthOf, monthRange, todayISO } from '../dates.js';
 import { MONTHS, formatDate, formatMoney, formatMonth, formatRelativeDay, normalizeText } from '../format.js';
-import { changeBadge, errorState, escapeHtml, expenseRow, icon, loadingState, topBar } from '../ui.js';
+import { changeBadge, errorState, escapeHtml, expenseRow, icon, loadingState, movementTabs, topBar } from '../ui.js';
 
 // Se conserva al volver de editar un gasto.
 const view = { month: monthOf(todayISO()), search: '', category: 'ALL' };
@@ -13,6 +13,7 @@ export function renderMovements(root) {
 
   root.innerHTML = `
     ${topBar('Movimientos')}
+    ${movementTabs('gastos')}
     <div data-slot="header"></div>
     <label class="search">
       ${icon('search')}

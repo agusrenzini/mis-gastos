@@ -7,7 +7,7 @@
 //  - /api: nunca se cachea. Los gastos siempre vienen del servidor.
 //
 // Si cambiás la lista de archivos, subí el número de versión.
-const CACHE = 'mis-gastos-v2';
+const CACHE = 'mis-gastos-v3';
 
 const APP_SHELL = [
   './',
@@ -28,8 +28,15 @@ const APP_SHELL = [
   './js/ui.js',
   './js/screens/admin.js',
   './js/screens/auth.js',
+  './js/screens/budget-form.js',
   './js/screens/change-password.js',
   './js/screens/expense-form.js',
+  './js/screens/income-form.js',
+  './js/screens/incomes.js',
+  './js/screens/obligation.js',
+  './js/screens/plan.js',
+  './js/screens/recurring-form.js',
+  './js/screens/recurring.js',
   './js/screens/home.js',
   './js/screens/movements.js',
   './js/screens/settings.js',

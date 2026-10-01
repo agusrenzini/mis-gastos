@@ -1,5 +1,6 @@
 package com.misgastos.controller;
 
+import com.misgastos.DatabaseCleaner;
 import com.misgastos.model.AppUser;
 import com.misgastos.model.Category;
 import com.misgastos.model.Expense;
@@ -55,6 +56,9 @@ class AccountSecurityTest {
     private MockMvc mvc;
 
     @Autowired
+    private DatabaseCleaner cleaner;
+
+    @Autowired
     private AppUserRepository users;
 
     @Autowired
@@ -65,8 +69,7 @@ class AccountSecurityTest {
 
     @BeforeEach
     void cleanDatabase() {
-        expenses.deleteAll();
-        users.deleteAll();
+        cleaner.clean();
         limiters.clear();
     }
 

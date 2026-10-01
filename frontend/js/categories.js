@@ -15,6 +15,12 @@ export const CATEGORIES = [
   { key: 'OTROS', label: 'Otros', emoji: '📦', color: '#64748B', bg: '#F1F5F9' },
 ];
 
+export const INCOME_TYPES = [
+  { key: 'SUELDO', label: 'Sueldo', emoji: '💼' },
+  { key: 'EXTRA', label: 'Trabajo extra', emoji: '🛠️' },
+  { key: 'OTROS', label: 'Otros', emoji: '💰' },
+];
+
 export const PAYMENT_METHODS = [
   { key: 'EFECTIVO', label: 'Efectivo', icon: 'cash' },
   { key: 'MERCADO_PAGO', label: 'Mercado Pago', icon: 'wallet' },
@@ -29,6 +35,10 @@ const PAYMENT_MAP = byKey(PAYMENT_METHODS);
 
 export function getCategory(key) {
   return CATEGORY_MAP[key] ?? CATEGORY_MAP.OTROS;
+}
+
+export function getIncomeType(key) {
+  return INCOME_TYPES.find((t) => t.key === key) ?? INCOME_TYPES[2];
 }
 
 export function getPaymentMethod(key) {

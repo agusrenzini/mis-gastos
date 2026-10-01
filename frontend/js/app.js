@@ -1,12 +1,20 @@
 // Punto de entrada: navegación entre pantallas según el "#" de la URL.
 //   #/inicio · #/movimientos · #/nuevo · #/voz · #/confirmar · #/gasto/12 · #/graficos · #/ajustes
 //   #/ingresar · #/registro · #/contrasena · #/admin
+//   #/ingresos · #/ingreso/nuevo · #/ingreso/5 · #/plan · #/presupuesto/2026-10 · #/fijos · #/fijo/3 · #/obligacion/7
 // Antes de mostrar cualquier pantalla se consulta la sesión: sin sesión solo se puede ingresar o registrarse.
 import { api } from './api.js';
 import { setupPwa } from './install.js';
 import { renderAdmin } from './screens/admin.js';
 import { renderLogin, renderRegister } from './screens/auth.js';
+import { renderBudgetForm } from './screens/budget-form.js';
 import { renderChangePassword } from './screens/change-password.js';
+import { renderIncomeForm } from './screens/income-form.js';
+import { renderIncomes } from './screens/incomes.js';
+import { renderObligation } from './screens/obligation.js';
+import { renderPlan } from './screens/plan.js';
+import { renderRecurringForm } from './screens/recurring-form.js';
+import { renderRecurring } from './screens/recurring.js';
 import { renderExpenseForm } from './screens/expense-form.js';
 import { renderHome } from './screens/home.js';
 import { renderMovements } from './screens/movements.js';
@@ -25,6 +33,15 @@ const ROUTES = [
   { pattern: /^confirmar$/, render: (root) => renderExpenseForm(root, { mode: 'voice' }) },
   { pattern: /^gasto\/(\d+)$/, render: (root, [id]) => renderExpenseForm(root, { mode: 'edit', id }) },
   { pattern: /^voz$/, render: renderVoice },
+  { pattern: /^ingresos$/, nav: 'movimientos', render: renderIncomes },
+  { pattern: /^ingreso\/nuevo$/, render: (root) => renderIncomeForm(root) },
+  { pattern: /^ingreso\/(\d+)$/, render: (root, [id]) => renderIncomeForm(root, { id }) },
+  { pattern: /^plan$/, nav: 'plan', render: renderPlan },
+  { pattern: /^presupuesto\/(\d{4}-\d{2})$/, render: renderBudgetForm },
+  { pattern: /^fijos$/, nav: 'plan', render: renderRecurring },
+  { pattern: /^fijo\/nuevo$/, render: (root) => renderRecurringForm(root) },
+  { pattern: /^fijo\/(\d+)$/, render: (root, [id]) => renderRecurringForm(root, { id }) },
+  { pattern: /^obligacion\/(\d+)$/, render: renderObligation },
   { pattern: /^contrasena$/, render: renderChangePassword },
   { pattern: /^admin$/, render: renderAdmin, admin: true },
   { pattern: /^ingresar$/, render: renderLogin, public: true },

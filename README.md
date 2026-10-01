@@ -101,7 +101,7 @@ Abrí **http://localhost:8080** en el navegador. Eso es todo: el backend sirve e
 - Si editás código Java, frená el servidor con `Ctrl+C` y volvé a correr el comando.
 - Para confirmar que usa PostgreSQL, buscá en el log: `Database: jdbc:postgresql://localhost:5432/mis_gastos (PostgreSQL 17...)`.
 
-> La base H2 en memoria (`jdbc:h2:mem:misgastos`) se usa **solo en `mvn test`**. No corras la app con el perfil `test`: los datos se borrarían al cerrarla.
+> La base H2 en memoria (`jdbc:h2:mem:misgastos`) se usa en `mvn test` y en `mvn spring-boot:test-run` (para probar sin tocar tu base; ver sección 9). Para el uso normal, usá el comando de arriba: los datos de H2 se borran al cerrar.
 
 ### Probar la app en el celular estando en tu PC
 
@@ -193,6 +193,16 @@ mis-gastos/
 | `DELETE` | `/api/expenses/{id}` | Elimina un gasto |
 | `GET` | `/api/dashboard?month=2026-09` | Resumen para Inicio |
 | `GET` | `/api/statistics?period=MONTH&date=2026-09-26` | Estadísticas: `WEEK`, `MONTH` o `YEAR` |
+| `GET` | `/api/incomes?month=2026-10` | Ingresos del mes |
+| `POST` · `PUT` · `DELETE` | `/api/incomes` · `/api/incomes/{id}` | Crea, modifica o elimina un ingreso |
+| `POST` | `/api/incomes/{id}/receive` | Marca un ingreso esperado como recibido (sin duplicarlo) |
+| `GET` · `POST` | `/api/recurring` | Gastos fijos (configuración) |
+| `PUT` · `DELETE` | `/api/recurring/{id}` | Modifica o elimina un gasto fijo (solo si no tiene meses pagados) |
+| `POST` | `/api/recurring/{id}/pause` · `/resume` · `/finish` | Pausa, reanuda o finaliza un gasto fijo |
+| `GET` | `/api/recurring/obligations?month=2026-10` | Meses a pagar de ese mes (genera los que falten) |
+| `POST` | `/api/recurring/obligations/{id}/pay` · `/link` · `/unpay` · `/skip` · `/restore` | Pagar (crea el gasto), vincular un gasto existente, deshacer, omitir o restaurar |
+| `PUT` | `/api/recurring/obligations/{id}/amount` | Ajusta el importe de un mes pendiente |
+| `GET` · `PUT` | `/api/budget?month=2026-10` | Presupuesto por categoría y resumen del mes |
 | `POST` | `/api/auth/register` | Crea una cuenta común e inicia sesión |
 | `POST` | `/api/auth/login` | Inicia sesión |
 | `POST` | `/api/auth/logout` | Cierra la sesión |
@@ -203,7 +213,7 @@ mis-gastos/
 | `POST` | `/api/admin/users/{id}/reset-password` | **Admin.** Genera una contraseña temporal |
 | `GET` · `POST` | `/api/admin/unassigned-expenses` · `/assign-to-me` | **Admin.** Gastos anteriores a las cuentas |
 
-Todas las rutas, salvo registro e inicio de sesión, requieren sesión iniciada. Cada usuario solo ve y modifica sus propios gastos: pedir el gasto de otro por su id responde 404. Los `POST`/`PUT`/`DELETE` llevan el header `X-XSRF-TOKEN` con el valor de la cookie `XSRF-TOKEN` (protección CSRF; `api.js` lo hace solo).
+Todas las rutas, salvo registro e inicio de sesión, requieren sesión iniciada. Cada usuario solo ve y modifica sus propios gastos, ingresos, gastos fijos y presupuestos: pedir un dato de otro por su id responde 404. Los `POST`/`PUT`/`DELETE` llevan el header `X-XSRF-TOKEN` con el valor de la cookie `XSRF-TOKEN` (protección CSRF; `api.js` lo hace solo).
 
 Ejemplo de gasto:
 
@@ -250,4 +260,30 @@ Para quitarle el rol a alguien: `UPDATE app_user SET role = 'USER' WHERE usernam
 - **Desactivar / Reactivar:** una cuenta desactivada no puede entrar (si tenía la app abierta, se le cierra la sesión), pero sus gastos se conservan. Al reactivarla vuelve todo como estaba. No podés desactivar tu propia cuenta.
 - **Restablecer contraseña** (cuando alguien te avisa que se la olvidó): genera una contraseña temporal del tipo `ab3k-x9mp-q2rt`, **que se muestra una sola vez**. Pasásela por un medio privado. La anterior deja de funcionar y se cierran sus sesiones abiertas. Al ingresar con la temporal, la app le pide elegir una nueva antes de seguir.
 - **Gastos anteriores a las cuentas:** los gastos cargados antes de esta versión no tienen dueño y nadie los ve. El panel muestra cuántos son y de qué fechas. Con **Asignarlos a mi cuenta** pasan a ser tuyos.
+
+---
+
+## 9. Ingresos, gastos fijos y presupuesto
+
+En la barra de abajo: **Movimientos** tiene las pestañas *Gastos* e *Ingresos*, y **Plan** reúne el resumen del mes, el presupuesto y los gastos fijos. **Ajustes** está en el engranaje de Inicio.
+
+- **Ingresos:** concepto, importe, fecha, tipo (sueldo, trabajo extra, otros) y estado. Un ingreso *esperado* sirve para planificar; al cobrarlo se marca como *recibido* (es el mismo registro, no se duplica).
+- **Gastos fijos** (Plan → Gestionar): se configuran una vez. Cada mes aparece en Plan como *pendiente*. Al tocarlo se puede:
+  - pagarlo (se registra el gasto real);
+  - vincular un gasto que ya habías cargado;
+  - ajustar el importe de ese mes;
+  - omitirlo.
+  Se pueden pausar, reanudar o finalizar sin perder el historial.
+- **Presupuesto** (Plan → Armar/Editar): un importe por categoría. Muestra lo gastado, los fijos pendientes y lo que queda. Avisa cuando una categoría se excede o cuando el total supera los ingresos planificados. Se puede copiar el del mes anterior. Asignar un presupuesto no registra gastos ni mueve dinero.
+
+Los balances del resumen muestran lo registrado en el mes; no son el saldo de tu cuenta.
+
+### Probarlo en tu PC sin tocar tu base
+
+```powershell
+cd backend
+mvn spring-boot:test-run
+```
+
+Levanta la app con una base H2 en memoria (se borra al cerrar) en http://localhost:8080. Creá una cuenta y probá. No uses `-Dspring-boot.run.profiles=test,dev`: la app se niega a arrancar así para no tocar tu PostgreSQL.
 

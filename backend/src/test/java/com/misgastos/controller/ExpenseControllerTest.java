@@ -1,5 +1,6 @@
 package com.misgastos.controller;
 
+import com.misgastos.DatabaseCleaner;
 import com.misgastos.model.AppUser;
 import com.misgastos.repository.AppUserRepository;
 import com.misgastos.repository.ExpenseRepository;
@@ -36,6 +37,9 @@ class ExpenseControllerTest {
     private MockMvc mvc;
 
     @Autowired
+    private DatabaseCleaner cleaner;
+
+    @Autowired
     private ExpenseRepository repository;
 
     @Autowired
@@ -45,8 +49,7 @@ class ExpenseControllerTest {
 
     @BeforeEach
     void cleanDatabase() {
-        repository.deleteAll();
-        users.deleteAll();
+        cleaner.clean();
         AppUser user = new AppUser();
         user.setUsername("ana");
         user.setPasswordHash("{noop}no-se-usa");

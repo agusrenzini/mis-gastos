@@ -79,6 +79,37 @@ export const api = {
   getDashboard: (month) => request('GET', `/dashboard${query({ month })}`),
   getStatistics: (period, date) => request('GET', `/statistics${query({ period, date })}`),
 
+  // Ingresos
+  listIncomes: (month) => request('GET', `/incomes${query({ month })}`),
+  getIncome: (id) => request('GET', `/incomes/${id}`),
+  createIncome: (income) => request('POST', '/incomes', income),
+  updateIncome: (id, income) => request('PUT', `/incomes/${id}`, income),
+  deleteIncome: (id) => request('DELETE', `/incomes/${id}`),
+  receiveIncome: (id) => request('POST', `/incomes/${id}/receive`),
+
+  // Gastos fijos y sus meses
+  listRecurring: () => request('GET', '/recurring'),
+  getRecurring: (id) => request('GET', `/recurring/${id}`),
+  createRecurring: (data) => request('POST', '/recurring', data),
+  updateRecurring: (id, data) => request('PUT', `/recurring/${id}`, data),
+  pauseRecurring: (id) => request('POST', `/recurring/${id}/pause`),
+  resumeRecurring: (id) => request('POST', `/recurring/${id}/resume`),
+  finishRecurring: (id) => request('POST', `/recurring/${id}/finish`),
+  deleteRecurring: (id) => request('DELETE', `/recurring/${id}`),
+  listObligations: (month) => request('GET', `/recurring/obligations${query({ month })}`),
+  getObligation: (id) => request('GET', `/recurring/obligations/${id}`),
+  adjustObligation: (id, amount) => request('PUT', `/recurring/obligations/${id}/amount`, { amount }),
+  payObligation: (id, data) => request('POST', `/recurring/obligations/${id}/pay`, data),
+  linkObligation: (id, expenseId) => request('POST', `/recurring/obligations/${id}/link`, { expenseId }),
+  obligationCandidates: (id) => request('GET', `/recurring/obligations/${id}/candidates`),
+  unpayObligation: (id) => request('POST', `/recurring/obligations/${id}/unpay`),
+  skipObligation: (id) => request('POST', `/recurring/obligations/${id}/skip`),
+  restoreObligation: (id) => request('POST', `/recurring/obligations/${id}/restore`),
+
+  // Presupuesto y resumen del mes
+  getBudget: (month) => request('GET', `/budget${query({ month })}`),
+  saveBudget: (month, items) => request('PUT', `/budget${query({ month })}`, { items }),
+
   // Cuenta
   me: () => request('GET', '/auth/me', null, { silent: true }),
   login: (username, password) => request('POST', '/auth/login', { username, password }, { silent: true }),

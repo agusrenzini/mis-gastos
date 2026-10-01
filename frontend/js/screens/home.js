@@ -1,4 +1,5 @@
 // Pantalla Inicio: resumen del mes, acceso a voz, donut por categoría y últimos gastos.
+// También un resumen corto de ingresos y gastos fijos que lleva a la pantalla Plan.
 import { api } from '../api.js';
 import { categoryLegend, donutChart, groupCategories } from '../charts.js';
 import { monthOf, todayISO } from '../dates.js';
@@ -9,7 +10,7 @@ export function renderHome(root) {
   const month = monthOf(todayISO());
 
   root.innerHTML = `
-    ${topBar('Inicio')}
+    ${topBar('Inicio', { action: `<a class="icon-button icon-button--soft" href="#/ajustes" aria-label="Ajustes">${icon('gear')}</a>` })}
     <section class="greeting">
       <h2 class="greeting__title">Hola 👋</h2>
       <p class="greeting__date">${icon('calendar')}${formatMonth(month)}</p>
@@ -21,6 +22,7 @@ export function renderHome(root) {
       <span class="voice-cta__wave" aria-hidden="true"><i></i><i></i><i></i></span>
     </a>
     <a class="btn btn--outline btn--block manual-cta" href="#/nuevo">${icon('plus-circle')}Registrar manualmente</a>
+    <div data-slot="month"></div>
     <div data-slot="details"></div>`;
 
   const load = async () => {
@@ -35,6 +37,10 @@ export function renderHome(root) {
     } catch (error) {
       summary.innerHTML = errorState(error.message);
     }
+    // Resumen corto del plan: si falla, Inicio sigue funcionando igual.
+    api.getBudget(month)
+      .then((budget) => { root.querySelector('[data-slot="month"]').innerHTML = planCard(budget.summary); })
+      .catch(() => {});
   };
 
   root.addEventListener('click', (event) => {
@@ -62,6 +68,27 @@ function summaryCard(data) {
         </div>
       </div>
     </section>`;
+}
+
+function planCard(s) {
+  const balance = Number(s.registeredBalance);
+  const pending = Number(s.pendingRecurring);
+  return `
+    <a class="card plan-card" href="#/plan">
+      <span class="plan-card__item">
+        <span class="mini-stat__label">${icon('income')}Ingresos recibidos</span>
+        <span class="amount">${formatMoney(s.incomeReceived)}</span>
+      </span>
+      <span class="plan-card__item">
+        <span class="mini-stat__label">${icon('repeat')}Fijos pendientes</span>
+        <span class="amount">${formatMoney(pending)}</span>
+      </span>
+      <span class="plan-card__item">
+        <span class="mini-stat__label">${icon('wallet')}Balance del mes</span>
+        <span class="amount ${balance < 0 ? 'is-negative' : ''}">${balance > 0 ? '+' : ''}${formatMoney(balance)}</span>
+      </span>
+      <span class="link plan-card__more">Ver plan del mes${icon('chevron-right')}</span>
+    </a>`;
 }
 
 function categoriesCard(data) {

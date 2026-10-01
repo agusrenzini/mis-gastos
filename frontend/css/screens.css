@@ -757,6 +757,400 @@
   user-select: all;
 }
 
+/* ---------- Comunes: estados, montos, avisos ---------- */
+.segment-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.segment-button[aria-current="page"] {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-1);
+}
+
+.tag--ok {
+  background: var(--color-down-bg);
+  color: var(--color-down);
+}
+
+.tag--pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.tag--danger {
+  background: var(--color-up-bg);
+  color: var(--color-up);
+}
+
+.amount--income {
+  color: var(--color-down);
+}
+
+.amount--muted {
+  color: var(--color-text-muted);
+}
+
+.is-negative {
+  color: var(--color-up);
+}
+
+.icon--ok {
+  color: var(--color-down);
+  vertical-align: -4px;
+}
+
+.empty-card {
+  padding: var(--space-md);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--r-xl);
+  text-align: center;
+}
+
+.empty-card .empty-text {
+  padding: var(--space-sm) 0;
+}
+
+.card > .empty-text {
+  padding: var(--space-md) 0 var(--space-sm);
+}
+
+.card > .btn,
+.card > .muted + .btn {
+  margin-top: var(--space-md);
+}
+
+.notice--warn {
+  background: #fef3c7;
+  color: #78350f;
+}
+
+.notice--warn .icon {
+  color: #b45309;
+}
+
+/* Fila con un botón debajo (ingreso esperado, gasto para vincular) */
+.row-with-action {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.row-with-action__button {
+  align-self: flex-end;
+}
+
+/* ---------- Ingresos ---------- */
+.income-totals {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+  margin: var(--space-md) 0 var(--space-sm);
+}
+
+.income-totals__value {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.income-totals__value--ok {
+  color: var(--color-down);
+}
+
+/* ---------- Plan: resumen ---------- */
+.summary-list {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--space-sm);
+}
+
+.summary-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: 8px 0;
+  color: var(--color-text-body);
+  font-size: 15px;
+}
+
+.summary-row small {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.summary-row--total {
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.summary-row--total .amount {
+  font-size: 17px;
+}
+
+.summary-subtitle {
+  margin: var(--space-md) 0 4px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.plan-card {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-sm);
+  color: var(--color-text);
+}
+
+.plan-card__item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.plan-card__item .amount {
+  font-size: 16px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.plan-card__more {
+  grid-column: 1 / -1;
+  justify-self: end;
+}
+
+/* ---------- Plan: presupuesto por categoría ---------- */
+.budget-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+.budget-line {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.budget-line__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.budget-line__name {
+  font-weight: 600;
+}
+
+.budget-line__remaining {
+  font-weight: 700;
+}
+
+.budget-line__remaining small {
+  margin-left: 4px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.budget-line__detail {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.budget-line__alert {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-up);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.budget-line__alert .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.progress--stacked {
+  display: flex;
+}
+
+.progress--stacked span {
+  border-radius: 0;
+}
+
+.progress__pending {
+  background: repeating-linear-gradient(135deg, var(--bar) 0 4px, transparent 4px 8px);
+  opacity: 0.55;
+}
+
+.budget-line--exceeded .progress {
+  box-shadow: inset 0 0 0 1px var(--color-up);
+}
+
+/* ---------- Editar presupuesto ---------- */
+.budget-month {
+  align-self: center;
+}
+
+.budget-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.budget-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.budget-input {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.budget-input label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.budget-input__name {
+  font-weight: 600;
+}
+
+.budget-input label small {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.budget-input__field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.budget-input .budget-input__field .input {
+  width: 9.5rem;
+  text-align: right;
+}
+
+.budget-totals {
+  position: sticky;
+  bottom: var(--space-sm);
+  z-index: 1;
+  box-shadow: var(--shadow-2);
+}
+
+/* ---------- Gastos fijos ---------- */
+.recurring-status__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.recurring-status__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: 12px;
+}
+
+.month-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+}
+
+.month-fields .field-label {
+  margin-bottom: 8px;
+}
+
+.obligation-head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.obligation-head__title {
+  font-weight: 700;
+}
+
+.obligation-head__amount {
+  grid-column: 1 / -1;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.pay-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pay-form .field-label {
+  margin: 6px 0 0;
+}
+
+.pay-form .budget-input__field .input,
+.adjust-form .budget-input__field .input {
+  width: 100%;
+}
+
+.pay-form .budget-input__field {
+  flex: auto;
+}
+
+.adjust-form__row {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.adjust-form__row .budget-input__field {
+  flex: 1;
+}
+
+.adjust-form .field-hint {
+  text-align: left;
+}
+
+.candidate-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.candidate {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.candidate .btn {
+  grid-column: 2 / -1;
+  justify-self: end;
+}
+
 /* Pantallas muy chicas (320px) */
 @media (max-width: 359px) {
   .card {
@@ -782,5 +1176,14 @@
 
   .category-legend {
     grid-template-columns: 1fr;
+  }
+
+  .plan-card,
+  .month-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .budget-input .budget-input__field .input {
+    width: 7.5rem;
   }
 }

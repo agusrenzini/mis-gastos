@@ -5,6 +5,7 @@ import com.misgastos.dto.ExpenseResponse;
 import com.misgastos.model.Expense;
 import com.misgastos.model.ExpenseSource;
 import com.misgastos.repository.ExpenseRepository;
+import com.misgastos.repository.RecurringObligationRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,9 +19,11 @@ public class ExpenseService {
     private static final LocalDate MAX_DATE = LocalDate.of(9999, 12, 31);
 
     private final ExpenseRepository repository;
+    private final RecurringObligationRepository obligations;
 
-    public ExpenseService(ExpenseRepository repository) {
+    public ExpenseService(ExpenseRepository repository, RecurringObligationRepository obligations) {
         this.repository = repository;
+        this.obligations = obligations;
     }
 
     @Transactional
@@ -56,7 +59,13 @@ public class ExpenseService {
 
     @Transactional
     public void delete(Long userId, Long id) {
-        repository.delete(find(userId, id));
+        Expense expense = find(userId, id);
+        // Si este gasto pagaba un mes de un gasto fijo, ese mes vuelve a quedar pendiente.
+        obligations.findByExpenseId(expense.getId()).ifPresent(o -> {
+            o.markPending();
+            obligations.saveAndFlush(o);
+        });
+        repository.delete(expense);
     }
 
     /** Un gasto de otro usuario responde igual que uno inexistente (404): no se revela que existe. */
