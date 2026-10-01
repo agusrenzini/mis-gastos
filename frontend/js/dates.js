@@ -12,8 +12,13 @@ export function parseISODate(iso) {
   return new Date(y, m - 1, d);
 }
 
+// "Hoy" siempre en hora argentina, igual que el servidor (aunque el teléfono esté en otra zona horaria).
+const ARGENTINA_DATE = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/Argentina/Buenos_Aires', year: 'numeric', month: '2-digit', day: '2-digit',
+});
+
 export function todayISO() {
-  return toISODate(new Date());
+  return ARGENTINA_DATE.format(new Date());
 }
 
 export function addDays(iso, days) {

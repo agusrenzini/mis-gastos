@@ -54,12 +54,13 @@ class MigrationTest {
             Flyway flyway = Flyway.configure().dataSource(single).load();
             flyway.migrate();
 
-            assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("5");
+            assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("6");
             assertThat(expenses(st)).isEqualTo(before).hasSize(2);
-            ResultSet users = st.executeQuery("SELECT username, role FROM app_user");
+            ResultSet users = st.executeQuery("SELECT username, role, session_version FROM app_user");
             assertThat(users.next()).isTrue();
             assertThat(users.getString(1)).isEqualTo("agus");
             assertThat(users.getString(2)).isEqualTo("ADMIN");
+            assertThat(users.getInt(3)).as("las cookies existentes siguen valiendo").isZero();
             for (String table : List.of("income", "recurring_expense", "recurring_obligation", "budget_item")) {
                 ResultSet count = st.executeQuery("SELECT count(*) FROM " + table);
                 count.next();

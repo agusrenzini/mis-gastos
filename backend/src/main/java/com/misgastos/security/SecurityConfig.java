@@ -65,6 +65,7 @@ public class SecurityConfig {
                 .addFilterBefore(new ActiveUserFilter(users, rememberMeServices), AuthorizationFilter.class)
                 .logout(logout -> logout
                         .logoutUrl("/api/auth/logout")
+                        .addLogoutHandler(new RevokeRememberMeHandler(users, rememberMeServices))
                         .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT)))
                 .exceptionHandling(errors -> errors
                         .authenticationEntryPoint((request, response, ex) ->

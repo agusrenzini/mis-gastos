@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
@@ -29,6 +30,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -66,6 +68,9 @@ class AccountSecurityTest {
 
     @Autowired
     private LoginLimiters limiters;
+
+    @Autowired
+    private com.zaxxer.hikari.HikariDataSource dataSource;
 
     @BeforeEach
     void cleanDatabase() {
@@ -175,6 +180,38 @@ class AccountSecurityTest {
     }
 
     @Test
+    void theDatabaseNamesTheDuplicateUsernameConstraint() {
+        // Lo que usa AuthService para distinguir un duplicado real de cualquier otro error
+        AppUser first = new AppUser();
+        first.setUsername("ana");
+        first.setPasswordHash("x");
+        users.saveAndFlush(first);
+        AppUser second = new AppUser();
+        second.setUsername("ana");
+        second.setPasswordHash("y");
+        assertThatThrownBy(() -> users.saveAndFlush(second))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .satisfies(e -> assertThat(isUsernameDuplicate(e)).isTrue());
+    }
+
+    private static boolean isUsernameDuplicate(Throwable e) {
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            if (t instanceof org.hibernate.exception.ConstraintViolationException v) {
+                return v.getConstraintName() != null && v.getConstraintName().toLowerCase().contains("uk_app_user_username");
+            }
+        }
+        return false;
+    }
+
+    @Test
+    void theTestDatabaseNeverRenewsConnections() {
+        // Con H2, las restricciones CHECK quedan atadas a la conexión que las creó: si el pool la renueva
+        // (por defecto cada 30 minutos), todos los registros nuevos fallan. Ver application-test.properties.
+        assertThat(dataSource.getMaxLifetime()).isZero();
+        assertThat(dataSource.getIdleTimeout()).isZero();
+    }
+
+    @Test
     void registrationsAreLimitedPerIp() throws Exception {
         for (int i = 0; i < 10; i++) {
             mvc.perform(post("/api/auth/register").with(csrf()).with(remoteAddr("10.0.0.9"))
@@ -251,6 +288,38 @@ class AccountSecurityTest {
         mvc.perform(get("/api/auth/me").cookie(rememberMe))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("ana"));
+    }
+
+    @Test
+    void logoutRevokesTheRememberMeCookieOnTheServer() throws Exception {
+        register("ana", "secreto1");
+        MvcResult result = send(post("/api/auth/login"), null, credentials("ana", "secreto1")).andReturn();
+        Cookie rememberMe = result.getResponse().getCookie("remember-me");
+        MockHttpSession session = sessionOf(result);
+
+        // La cookie funciona antes de cerrar sesión
+        mvc.perform(get("/api/auth/me").cookie(rememberMe)).andExpect(status().isOk());
+
+        // Al cerrar sesión, el navegador recibe la orden de borrarla...
+        MvcResult logout = send(post("/api/auth/logout"), session, null).andExpect(status().isNoContent()).andReturn();
+        assertThat(logout.getResponse().getCookie("remember-me").getMaxAge()).isZero();
+        // ...y aunque alguien haya guardado una copia, ya no sirve
+        mvc.perform(get("/api/auth/me").cookie(rememberMe)).andExpect(status().isUnauthorized());
+
+        // Volver a ingresar entrega una cookie nueva que sí funciona
+        Cookie fresh = send(post("/api/auth/login"), null, credentials("ana", "secreto1"))
+                .andReturn().getResponse().getCookie("remember-me");
+        mvc.perform(get("/api/auth/me").cookie(fresh)).andExpect(status().isOk());
+    }
+
+    @Test
+    void logoutWithOnlyTheRememberMeCookieAlsoRevokesIt() throws Exception {
+        register("ana", "secreto1");
+        Cookie rememberMe = send(post("/api/auth/login"), null, credentials("ana", "secreto1"))
+                .andReturn().getResponse().getCookie("remember-me");
+        // Sin sesión en el servidor (por ejemplo, después de un reinicio), solo con la cookie
+        mvc.perform(post("/api/auth/logout").cookie(rememberMe).with(csrf())).andExpect(status().isNoContent());
+        mvc.perform(get("/api/auth/me").cookie(rememberMe)).andExpect(status().isUnauthorized());
     }
 
     // ---------- Protección general ----------

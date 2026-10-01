@@ -12,14 +12,15 @@ import java.util.List;
 /**
  * El usuario con sesión iniciada, tal como lo ve Spring Security.
  * Los controladores lo reciben con @AuthenticationPrincipal y usan id() para filtrar los datos.
- * passwordHash se usa solo para firmar la cookie "recordarme" y detectar cambios de contraseña.
+ * passwordHash y sessionVersion se usan solo para firmar la cookie "recordarme": si cambia la contraseña
+ * o se cierra sesión (sessionVersion + 1), las cookies anteriores dejan de valer.
  */
 public record AppUserPrincipal(Long id, String username, String passwordHash, Role role,
-                               boolean active, boolean mustChangePassword) implements UserDetails {
+                               boolean active, boolean mustChangePassword, int sessionVersion) implements UserDetails {
 
     public static AppUserPrincipal from(AppUser user) {
         return new AppUserPrincipal(user.getId(), user.getUsername(), user.getPasswordHash(), user.getRole(),
-                user.isActive(), user.isMustChangePassword());
+                user.isActive(), user.isMustChangePassword(), user.getSessionVersion());
     }
 
     public boolean isAdmin() {
@@ -31,9 +32,13 @@ public record AppUserPrincipal(Long id, String username, String passwordHash, Ro
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
+    /**
+     * Lo que firma la cookie "recordarme". Con versión 0 es solo el hash, así las cookies emitidas
+     * antes de existir sessionVersion siguen siendo válidas.
+     */
     @Override
     public String getPassword() {
-        return passwordHash;
+        return sessionVersion == 0 ? passwordHash : passwordHash + ":" + sessionVersion;
     }
 
     @Override

@@ -1151,6 +1151,218 @@
   justify-self: end;
 }
 
+/* ---------- Ingreso / egreso: tipo de movimiento ---------- */
+.tag--income {
+  background: var(--color-down-bg);
+  color: var(--color-down);
+}
+
+.tag--expense {
+  background: var(--color-surface-container);
+  color: var(--color-text);
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tag-row .tag {
+  margin-top: 4px;
+}
+
+.kind-switch .segment > span {
+  font-size: 16px;
+}
+
+.kind-switch .segment--expense input:checked + span {
+  background: var(--color-text);
+  color: #fff;
+}
+
+.kind-switch .segment--income input:checked + span {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.kind-badge {
+  width: fit-content;
+  padding: 4px 12px;
+  border-radius: var(--r-full);
+  font-weight: 700;
+}
+
+.kind-badge--expense {
+  background: var(--color-surface-container);
+}
+
+.kind-badge--income {
+  background: var(--color-down-bg);
+  color: var(--color-down);
+}
+
+.kind-choice {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+}
+
+.kind-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 18px 16px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--r-xl);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: left;
+  box-shadow: var(--shadow-1);
+}
+
+.kind-tile:active {
+  transform: scale(0.98);
+}
+
+.kind-tile__sign {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.kind-tile--expense .kind-tile__sign {
+  background: var(--color-surface-container);
+}
+
+.kind-tile--income .kind-tile__sign {
+  background: var(--color-down-bg);
+  color: var(--color-down);
+}
+
+.kind-tile__title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.kind-tile__hint {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.center {
+  text-align: center;
+}
+
+/* El mes elegido puede ser largo ("Noviembre 2026 (próximo)"): se achica y no empuja las flechas. */
+.month-card__nav .pill {
+  flex: 0 1 auto;
+  min-width: 0;
+  justify-content: center;
+  text-align: center;
+  white-space: normal;
+}
+
+.month-card__nav .icon-button {
+  flex: none;
+}
+
+/* ---------- Inicio ---------- */
+.quick-add {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.month-totals {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+  margin: 14px 0 6px;
+}
+
+.month-totals__item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.month-totals__value {
+  font-size: clamp(20px, 6.5vw, 26px);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.month-balance {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border);
+  font-weight: 600;
+}
+
+.month-balance strong {
+  font-size: 20px;
+}
+
+/* ---------- Movimientos ---------- */
+.movements-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-sm);
+}
+
+.totals-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-sm);
+  margin: var(--space-md) 0 var(--space-sm);
+}
+
+.totals-grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.totals-grid__value {
+  font-size: clamp(15px, 4.6vw, 19px);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+/* ---------- Plan ---------- */
+.plan-incomes {
+  margin: var(--space-sm) 0;
+}
+
+.button-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+/* ---------- Login: crear cuenta visible ---------- */
+.auth-card__footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-border);
+}
+
 /* Pantallas muy chicas (320px) */
 @media (max-width: 359px) {
   .card {
@@ -1179,8 +1391,14 @@
   }
 
   .plan-card,
-  .month-fields {
+  .month-fields,
+  .kind-choice,
+  .button-row {
     grid-template-columns: 1fr;
+  }
+
+  .totals-grid {
+    grid-template-columns: 1fr 1fr;
   }
 
   .budget-input .budget-input__field .input {

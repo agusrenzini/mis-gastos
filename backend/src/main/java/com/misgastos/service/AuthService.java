@@ -65,8 +65,12 @@ public class AuthService {
         try {
             return users.saveAndFlush(user);
         } catch (DataIntegrityViolationException e) {
-            // Dos registros simultáneos con el mismo nombre
-            throw ApiException.field(HttpStatus.CONFLICT, "username", USERNAME_TAKEN);
+            // Solo un duplicado real (dos registros simultáneos con el mismo nombre) es "ya está en uso".
+            // Cualquier otro error se propaga: GlobalExceptionHandler lo registra en el log y responde 500.
+            if (ConstraintViolations.isViolationOf(e, "uk_app_user_username")) {
+                throw ApiException.field(HttpStatus.CONFLICT, "username", USERNAME_TAKEN);
+            }
+            throw e;
         }
     }
 

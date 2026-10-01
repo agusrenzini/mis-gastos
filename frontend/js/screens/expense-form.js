@@ -1,19 +1,24 @@
-// Formulario de gasto. Se usa en tres modos:
-//   "new"   → Nuevo gasto manual
-//   "voice" → Confirmación de un gasto dictado (viene prellenado por el parser)
-//   "edit"  → Consultar, modificar o eliminar un gasto existente
+// Formulario de egreso (gasto). Se usa en tres modos:
+//   "new"   → Nuevo egreso manual
+//   "voice" → Confirmación de un movimiento dictado (viene prellenado por el parser)
+//   "edit"  → Consultar, modificar o eliminar un egreso existente
+// En "new" y "voice" arriba hay un selector Egreso / Ingreso para cambiar de tipo.
 import { api } from '../api.js';
 import { CATEGORIES, PAYMENT_METHODS, getCategory } from '../categories.js';
 import { addDays, todayISO } from '../dates.js';
 import { formatAmountInput, formatDate, formatMoney, parseAmountInput } from '../format.js';
-import { getPreferredPaymentMethod, setPreferredPaymentMethod, takeVoiceDraft } from '../state.js';
+import { getLastSection, getPreferredPaymentMethod, setPreferredPaymentMethod, takeVoiceDraft } from '../state.js';
 import { confirmDialog, errorState, escapeHtml, icon, loadingState, showToast, topBar } from '../ui.js';
 
 const MAX_AMOUNT = 9_999_999_999.99;
 
-export function renderExpenseForm(root, { mode, id }) {
+/**
+ * draft: datos ya interpretados (modo voz). onSwitchKind(kind, edits): cambiar a ingreso sin perder lo cargado.
+ * onSaved: se llama una vez guardado.
+ */
+export function renderExpenseForm(root, { mode, id, draft: given = null, onSwitchKind = null, onSaved = null }) {
   if (mode === 'voice') {
-    const draft = takeVoiceDraft();
+    const draft = given ?? takeVoiceDraft();
     if (!draft) {
       location.replace('#/voz');
       return;
@@ -26,7 +31,7 @@ export function renderExpenseForm(root, { mode, id }) {
       paymentMethod: draft.paymentMethod ?? getPreferredPaymentMethod(),
       source: 'VOICE',
       voiceTranscript: draft.transcript,
-    });
+    }, null, { onSwitchKind, onSaved });
     return;
   }
 
@@ -56,23 +61,24 @@ export function renderExpenseForm(root, { mode, id }) {
   load();
 }
 
-function mount(root, mode, values, id) {
+function mount(root, mode, values, id, { onSwitchKind = null, onSaved = null } = {}) {
   const today = todayISO();
   const yesterday = addDays(today, -1);
   const dateChoice = values.date === today ? 'today' : values.date === yesterday ? 'yesterday' : 'other';
-  const exitTo = mode === 'edit' ? '#/movimientos' : '#/inicio';
+  const exitTo = getLastSection(mode === 'edit' ? '#/movimientos' : '#/inicio');
 
-  const title = mode === 'edit' ? 'Editar gasto' : 'Nuevo gasto';
+  const title = mode === 'edit' ? 'Editar egreso' : mode === 'voice' ? 'Confirmar movimiento' : 'Nuevo egreso';
   const action = mode === 'new'
     ? `<a class="icon-button icon-button--primary" href="#/voz" aria-label="Registrar por voz">${icon('mic')}</a>`
     : '';
 
   root.innerHTML = `
     ${topBar(title, { back: exitTo, action })}
+    ${mode !== 'edit' ? kindSwitch('EXPENSE') : '<p class="kind-badge kind-badge--expense">− Egreso</p>'}
     ${mode === 'voice' ? `
       <section class="confirm-intro">
         <span class="pill pill--mint">Capturado por voz</span>
-        <h2 class="confirm-intro__title">¿Está bien este gasto?</h2>
+        <h2 class="confirm-intro__title">¿Está bien este egreso?</h2>
         <p class="transcript-pill">${icon('mic')}<q>${escapeHtml(values.voiceTranscript)}</q></p>
       </section>` : ''}
     ${mode === 'edit' && values.voiceTranscript ? `
@@ -143,9 +149,9 @@ function mount(root, mode, values, id) {
       </section>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn--primary btn--block btn--lg">${icon('check-circle')}<span>Guardar gasto</span></button>
+        <button type="submit" class="btn btn--primary btn--block btn--lg">${icon('check-circle')}<span>Guardar egreso</span></button>
         ${mode === 'edit'
-          ? `<button type="button" class="btn btn--danger-ghost btn--block" data-action="delete">${icon('trash')}Eliminar gasto</button>`
+          ? `<button type="button" class="btn btn--danger-ghost btn--block" data-action="delete">${icon('trash')}Eliminar egreso</button>`
           : ''}
         <a class="btn btn--text btn--block" href="${exitTo}">${mode === 'voice' ? 'Descartar' : 'Cancelar'}</a>
       </div>
@@ -172,6 +178,14 @@ function mount(root, mode, values, id) {
       : '';
   };
 
+  root.querySelector('.kind-switch')?.addEventListener('change', (event) => {
+    if (event.target.value !== 'INCOME') return;
+    const amount = parseAmountInput(amountInput.value);
+    const edits = { amount: amount > 0 ? amount : null, date: currentDate() };
+    if (onSwitchKind) onSwitchKind('INCOME', edits);
+    else location.hash = '#/ingreso/nuevo';
+  });
+
   form.addEventListener('change', (event) => {
     if (event.target.name === 'dateChoice') {
       customDate.hidden = event.target.value !== 'other';
@@ -187,10 +201,13 @@ function mount(root, mode, values, id) {
   });
   amountInput.addEventListener('input', () => clearError(form, 'amount'));
 
+  let saving = false;
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
+    if (saving) return; // un segundo toque mientras se guarda no crea otro gasto
     const payload = readForm(form, currentDate(), values);
     if (!payload) return;
+    saving = true;
 
     const button = form.querySelector('[type="submit"]');
     button.disabled = true;
@@ -200,19 +217,21 @@ function mount(root, mode, values, id) {
       if (mode === 'edit') await api.updateExpense(id, payload);
       else await api.createExpense(payload);
       setPreferredPaymentMethod(payload.paymentMethod);
-      showToast(mode === 'edit' ? 'Cambios guardados' : `Gasto de ${formatMoney(payload.amount)} guardado`);
+      onSaved?.();
+      showToast(mode === 'edit' ? 'Cambios guardados' : `Egreso de ${formatMoney(payload.amount)} guardado`);
       location.hash = exitTo;
     } catch (error) {
       // Los datos quedan en el formulario: no se pierde nada si falla la conexión.
       showServerErrors(form, error);
+      saving = false;
       button.disabled = false;
-      button.querySelector('span').textContent = 'Guardar gasto';
+      button.querySelector('span').textContent = 'Guardar egreso';
     }
   });
 
   form.querySelector('[data-action="delete"]')?.addEventListener('click', async () => {
     const ok = await confirmDialog({
-      title: '¿Eliminar este gasto?',
+      title: '¿Eliminar este egreso?',
       message: `${values.description} · ${formatMoney(values.amount)}. Esta acción no se puede deshacer.`,
       confirmLabel: 'Eliminar',
       danger: true,
@@ -220,8 +239,8 @@ function mount(root, mode, values, id) {
     if (!ok) return;
     try {
       await api.deleteExpense(id);
-      showToast('Gasto eliminado');
-      location.hash = '#/movimientos';
+      showToast('Egreso eliminado');
+      location.hash = exitTo;
     } catch (error) {
       showServerErrors(form, error);
     }
@@ -229,6 +248,15 @@ function mount(root, mode, values, id) {
 
   refreshHints();
   if (mode === 'voice' && !values.amount) amountInput.focus();
+}
+
+/** Selector Egreso / Ingreso al cargar un movimiento nuevo. */
+export function kindSwitch(selected) {
+  return `
+    <div class="segmented kind-switch" role="radiogroup" aria-label="Tipo de movimiento">
+      <label class="segment segment--expense"><input type="radio" name="kind" value="EXPENSE" ${selected === 'EXPENSE' ? 'checked' : ''}><span>− Egreso</span></label>
+      <label class="segment segment--income"><input type="radio" name="kind" value="INCOME" ${selected === 'INCOME' ? 'checked' : ''}><span>+ Ingreso</span></label>
+    </div>`;
 }
 
 function radio(name, value, labelHtml, selected, className = 'segment') {

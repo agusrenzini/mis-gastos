@@ -71,12 +71,12 @@ const MONTH_NAMES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'jul
 const WEEKDAY_NAMES = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
 
 /** Minúsculas y sin tildes: "Gasté" → "gaste". */
-function strip(text) {
+export function strip(text) {
   return text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
 /** Saca signos de puntuación, pero respeta los puntos y comas dentro de números ("18.000", "12,50"). */
-function clean(text) {
+export function clean(text) {
   return text
     .replace(/[¿?¡!;:"“”«»()]/g, ' ')
     .replace(/(?<!\d)[.,]|[.,](?!\d)/g, ' ')
@@ -241,10 +241,10 @@ const EDGE_WORDS = new Set(['en', 'el', 'la', 'los', 'las', 'de', 'del', 'un', '
   'para', 'con', 'y', 'a', 'al', 'que', 'mi', 'mis']);
 
 /** Si no hubo palabra clave, arma la descripción con lo que queda de la frase. */
-function fallbackDescription(original) {
+export function fallbackDescription(original, extraIgnored = new Set()) {
   const words = clean(original).split(' ').filter((word) => {
     const w = strip(word).replace(/^\$/, '');
-    return w && !IGNORED_WORDS.has(w) && !(w in NUMBER_WORDS) && !/\d/.test(w);
+    return w && !IGNORED_WORDS.has(w) && !extraIgnored.has(w) && !(w in NUMBER_WORDS) && !/\d/.test(w);
   });
   while (words.length && EDGE_WORDS.has(strip(words[0]))) words.shift();
   while (words.length && EDGE_WORDS.has(strip(words[words.length - 1]))) words.pop();

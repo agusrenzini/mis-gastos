@@ -11,7 +11,7 @@ export function renderSettings(root) {
   const user = getCurrentUser();
 
   root.innerHTML = `
-    ${topBar('Ajustes', { back: '#/inicio' })}
+    ${topBar('Ajustes')}
 
     <section class="card">
       <h2 class="card__title">${icon('user')}Cuenta</h2>

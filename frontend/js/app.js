@@ -1,49 +1,60 @@
 // Punto de entrada: navegación entre pantallas según el "#" de la URL.
-//   #/inicio · #/movimientos · #/nuevo · #/voz · #/confirmar · #/gasto/12 · #/graficos · #/ajustes
-//   #/ingresar · #/registro · #/contrasena · #/admin
-//   #/ingresos · #/ingreso/nuevo · #/ingreso/5 · #/plan · #/presupuesto/2026-10 · #/fijos · #/fijo/3 · #/obligacion/7
+// Navegación principal (barra de abajo): Inicio · Movimientos · Plan · Ajustes.
+//   Inicio       #/inicio       → #/agregar · #/nuevo · #/ingreso/nuevo · #/voz → #/confirmar
+//   Movimientos  #/movimientos  → #/gasto/12 · #/ingreso/5 · #/graficos
+//   Plan         #/plan         → #/presupuesto/2026-11 · #/ingreso/esperado/2026-11 · #/fijos · #/fijo/3 · #/obligacion/7
+//   Ajustes      #/ajustes      → #/contrasena · #/admin (solo administradores)
+//   Sin sesión:  #/ingresar · #/registro
 // Antes de mostrar cualquier pantalla se consulta la sesión: sin sesión solo se puede ingresar o registrarse.
 import { api } from './api.js';
 import { setupPwa } from './install.js';
+import { renderAddMovement } from './screens/add-movement.js';
 import { renderAdmin } from './screens/admin.js';
 import { renderLogin, renderRegister } from './screens/auth.js';
 import { renderBudgetForm } from './screens/budget-form.js';
 import { renderChangePassword } from './screens/change-password.js';
+import { renderExpenseForm } from './screens/expense-form.js';
+import { renderHome } from './screens/home.js';
 import { renderIncomeForm } from './screens/income-form.js';
-import { renderIncomes } from './screens/incomes.js';
+import { movementsView, renderMovements } from './screens/movements.js';
 import { renderObligation } from './screens/obligation.js';
 import { renderPlan } from './screens/plan.js';
 import { renderRecurringForm } from './screens/recurring-form.js';
 import { renderRecurring } from './screens/recurring.js';
-import { renderExpenseForm } from './screens/expense-form.js';
-import { renderHome } from './screens/home.js';
-import { renderMovements } from './screens/movements.js';
 import { renderSettings } from './screens/settings.js';
 import { renderStatistics } from './screens/statistics.js';
+import { renderVoiceConfirm } from './screens/voice-confirm.js';
 import { renderVoice } from './screens/voice.js';
-import { getCurrentUser, setCurrentUser } from './state.js';
+import { getCurrentUser, setCurrentUser, setLastSection } from './state.js';
 import { errorState } from './ui.js';
 
+// nav: qué pestaña de la barra queda marcada. section: true en las 4 pantallas principales.
 const ROUTES = [
-  { pattern: /^inicio$/, nav: 'inicio', render: renderHome },
-  { pattern: /^movimientos$/, nav: 'movimientos', render: renderMovements },
-  { pattern: /^graficos$/, nav: 'graficos', render: renderStatistics },
-  { pattern: /^ajustes$/, nav: 'ajustes', render: renderSettings },
-  { pattern: /^nuevo$/, render: (root) => renderExpenseForm(root, { mode: 'new' }) },
-  { pattern: /^confirmar$/, render: (root) => renderExpenseForm(root, { mode: 'voice' }) },
-  { pattern: /^gasto\/(\d+)$/, render: (root, [id]) => renderExpenseForm(root, { mode: 'edit', id }) },
-  { pattern: /^voz$/, render: renderVoice },
-  { pattern: /^ingresos$/, nav: 'movimientos', render: renderIncomes },
-  { pattern: /^ingreso\/nuevo$/, render: (root) => renderIncomeForm(root) },
-  { pattern: /^ingreso\/(\d+)$/, render: (root, [id]) => renderIncomeForm(root, { id }) },
-  { pattern: /^plan$/, nav: 'plan', render: renderPlan },
-  { pattern: /^presupuesto\/(\d{4}-\d{2})$/, render: renderBudgetForm },
+  { pattern: /^inicio$/, nav: 'inicio', section: true, render: renderHome },
+  { pattern: /^movimientos$/, nav: 'movimientos', section: true, render: renderMovements },
+  { pattern: /^plan$/, nav: 'plan', section: true, render: renderPlan },
+  { pattern: /^ajustes$/, nav: 'ajustes', section: true, render: renderSettings },
+
+  { pattern: /^graficos$/, nav: 'movimientos', render: renderStatistics },
   { pattern: /^fijos$/, nav: 'plan', render: renderRecurring },
+
+  { pattern: /^agregar$/, render: renderAddMovement },
+  { pattern: /^nuevo$/, render: (root) => renderExpenseForm(root, { mode: 'new' }) },
+  { pattern: /^gasto\/(\d+)$/, render: (root, [id]) => renderExpenseForm(root, { mode: 'edit', id }) },
+  { pattern: /^ingreso\/nuevo$/, render: (root) => renderIncomeForm(root) },
+  { pattern: /^ingreso\/esperado\/(\d{4}-\d{2})$/, render: (root, [month]) => renderIncomeForm(root, { expectedMonth: month }) },
+  { pattern: /^ingreso\/(\d+)$/, render: (root, [id]) => renderIncomeForm(root, { id }) },
+  { pattern: /^voz$/, render: renderVoice },
+  { pattern: /^confirmar$/, render: renderVoiceConfirm },
+  { pattern: /^presupuesto\/(\d{4}-\d{2})$/, render: renderBudgetForm },
   { pattern: /^fijo\/nuevo$/, render: (root) => renderRecurringForm(root) },
   { pattern: /^fijo\/(\d+)$/, render: (root, [id]) => renderRecurringForm(root, { id }) },
   { pattern: /^obligacion\/(\d+)$/, render: renderObligation },
   { pattern: /^contrasena$/, render: renderChangePassword },
   { pattern: /^admin$/, render: renderAdmin, admin: true },
+  // Dirección vieja de la lista de ingresos: ahora están en Movimientos, filtrados.
+  { pattern: /^ingresos$/, render: () => { movementsView.filter = 'INCOME'; location.replace('#/movimientos'); } },
+
   { pattern: /^ingresar$/, render: renderLogin, public: true },
   { pattern: /^registro$/, render: renderRegister, public: true },
 ];
@@ -85,6 +96,7 @@ function navigate() {
   screen.className = 'screen';
   app.replaceChildren(screen);
 
+  if (route.section) setLastSection(`#/${path}`);
   const params = path.match(route.pattern).slice(1);
   cleanup = route.render(screen, params);
 

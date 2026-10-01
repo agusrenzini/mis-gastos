@@ -71,7 +71,7 @@ function mount(root, month, budget) {
 
       <section class="card budget-totals" aria-live="polite">
         <div class="summary-row summary-row--total"><span>Total presupuestado</span><span class="amount" data-slot="total"></span></div>
-        <div class="summary-row"><span>Ingresos planificados sin asignar</span><span class="amount" data-slot="free"></span></div>
+        <div class="summary-row"><span data-slot="free-label">Falta asignar</span><span class="amount" data-slot="free"></span></div>
         <p class="notice notice--warn" data-slot="over" hidden>${icon('alert')}<span>El total supera tus ingresos planificados. Podés guardarlo igual.</span></p>
       </section>
 
@@ -93,7 +93,8 @@ function mount(root, month, budget) {
     const free = planned - total;
     root.querySelector('[data-slot="total"]').textContent = formatMoney(total);
     const freeEl = root.querySelector('[data-slot="free"]');
-    freeEl.textContent = formatMoney(free);
+    freeEl.textContent = formatMoney(Math.abs(free));
+    root.querySelector('[data-slot="free-label"]').textContent = free >= 0 ? 'Falta asignar' : 'Presupuestado de más';
     freeEl.classList.toggle('is-negative', free < 0);
     root.querySelector('[data-slot="over"]').hidden = !(total > planned);
   };

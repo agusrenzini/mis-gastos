@@ -18,7 +18,7 @@ const view = { period: 'MONTH', date: todayISO() };
 
 export function renderStatistics(root) {
   root.innerHTML = `
-    ${topBar('Gráficos')}
+    ${topBar('Gráficos', { back: '#/movimientos' })}
     <div class="segmented segmented--tabs" role="group" aria-label="Período">
       ${PERIODS.map((p) => `
         <button type="button" class="segment-button" data-action="period" data-period="${p.key}"

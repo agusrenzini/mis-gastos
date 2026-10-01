@@ -1,7 +1,8 @@
-// Pantalla de registro por voz: escucha → transcribe → interpreta → pasa a confirmación.
+// Registro por voz de ingresos y egresos: escucha → transcribe → interpreta → pasa a confirmación (#/confirmar).
+// Nunca guarda directo: siempre se revisa y confirma antes.
 import { setVoiceDraft } from '../state.js';
 import { escapeHtml, icon, topBar } from '../ui.js';
-import { parseExpense } from '../voice/expense-parser.js';
+import { parseMovement } from '../voice/movement-parser.js';
 import { SpeechRecognitionService, isSpeechRecognitionSupported } from '../voice/speech-recognition-service.js';
 
 export function renderVoice(root) {
@@ -9,17 +10,18 @@ export function renderVoice(root) {
   const speech = new SpeechRecognitionService({ lang: 'es-AR' });
 
   root.innerHTML = `
-    ${topBar('Nuevo gasto', { back: '#/inicio' })}
+    ${topBar('Registrar por voz', { back: '#/inicio' })}
     <section class="voice">
       <span class="pill pill--soft"><span class="dot dot--primary" aria-hidden="true"></span>Entrada inteligente</span>
-      <h2 class="voice__title">Contame qué gastaste</h2>
-      <p class="voice__subtitle">Hablá de forma natural. Detectamos el monto, la categoría y la fecha.</p>
+      <h2 class="voice__title">Contame qué gastaste o cobraste</h2>
+      <p class="voice__subtitle">Hablá de forma natural. Detectamos si es ingreso o egreso, el monto, la categoría y la fecha.</p>
 
       <div class="card tip-card">
         <span class="tip-card__icon">${icon('bulb')}</span>
         <div>
           <p class="overline">Probá decir:</p>
-          <p class="tip-card__example">“Gasté 18 mil pesos en una cena ayer”</p>
+          <p class="tip-card__example">“Gasté 12 mil en supermercado”</p>
+          <p class="tip-card__example">“Cobré 800 mil de sueldo”</p>
         </div>
       </div>
 
@@ -42,24 +44,24 @@ export function renderVoice(root) {
         <div class="card notice-card" role="alert">
           ${icon('info')}
           <p>El reconocimiento de voz no está disponible en este navegador.
-             Podés registrar el gasto manualmente.</p>
+             Podés escribir la frase acá abajo o cargar el movimiento a mano.</p>
         </div>
-        <a class="btn btn--primary btn--block btn--lg" href="#/nuevo">${icon('plus-circle')}Registrar manualmente</a>`}
+        <a class="btn btn--primary btn--block btn--lg" href="#/agregar">${icon('plus-circle')}Cargar a mano</a>`}
 
       <form class="typed-phrase" data-slot="typed">
         <label class="field-label" for="phrase">${supported ? 'O escribí la frase' : 'O escribí la frase como la dirías'}</label>
         <div class="typed-phrase__row">
-          <input id="phrase" name="phrase" class="input" autocomplete="off" placeholder="Ej: 10 lucas de nafta">
+          <input id="phrase" name="phrase" class="input" autocomplete="off" placeholder="Ej: cobré 25 mil por un trabajo">
           <button type="submit" class="icon-button icon-button--primary" aria-label="Interpretar frase">${icon('arrow-right')}</button>
         </div>
       </form>
 
       <a class="btn btn--text btn--block" href="#/inicio">Cancelar y volver</a>
-      <p class="footnote">${icon('info')}Podés mencionar monto, categoría, fecha o forma de pago</p>
+      <p class="footnote">${icon('info')}Antes de guardar vas a poder revisar y corregir todo</p>
     </section>`;
 
   const goToConfirmation = (text) => {
-    setVoiceDraft(parseExpense(text));
+    setVoiceDraft(parseMovement(text));
     location.hash = '#/confirmar';
   };
 

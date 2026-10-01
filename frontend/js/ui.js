@@ -36,16 +36,6 @@ export function monthNav(label, { nextDisabled = false } = {}) {
     </div>`;
 }
 
-/** Pestañas Gastos / Ingresos de la sección Movimientos. */
-export function movementTabs(active) {
-  const tab = (key, href, label) => `
-    <a class="segment-button" href="${href}" ${active === key ? 'aria-current="page"' : ''}>${label}</a>`;
-  return `
-    <nav class="segmented segmented--tabs" aria-label="Tipo de movimiento">
-      ${tab('gastos', '#/movimientos', 'Gastos')}${tab('ingresos', '#/ingresos', 'Ingresos')}
-    </nav>`;
-}
-
 export function loadingState(text = 'Cargando…') {
   return `<div class="state-card" role="status"><span class="spinner" aria-hidden="true"></span>${text}</div>`;
 }

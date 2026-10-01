@@ -43,6 +43,10 @@ public class AppUser {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    /** Se incrementa al cerrar sesión: invalida las cookies "recordarme" emitidas antes. */
+    @Column(name = "session_version", nullable = false)
+    private int sessionVersion;
+
     @PrePersist
     void onCreate() {
         createdAt = Instant.now();
@@ -66,4 +70,6 @@ public class AppUser {
     public void setMustChangePassword(boolean mustChangePassword) { this.mustChangePassword = mustChangePassword; }
 
     public Instant getCreatedAt() { return createdAt; }
+
+    public int getSessionVersion() { return sessionVersion; }
 }

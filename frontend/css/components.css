@@ -755,7 +755,7 @@
   left: 0;
   z-index: 20;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   align-items: end;
   max-width: var(--content-width);
   height: calc(var(--nav-height) + var(--safe-bottom));

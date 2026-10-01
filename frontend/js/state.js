@@ -14,6 +14,18 @@ export function takeVoiceDraft() {
   return draft;
 }
 
+// Última sección principal visitada (#/inicio, #/movimientos, #/plan, #/ajustes).
+// Los formularios vuelven ahí al guardar o cancelar.
+let lastSection = null;
+
+export function setLastSection(hash) {
+  lastSection = hash;
+}
+
+export function getLastSection(fallback) {
+  return lastSection ?? fallback;
+}
+
 // Usuario con sesión iniciada: { username, role, mustChangePassword } o null.
 let currentUser = null;
 

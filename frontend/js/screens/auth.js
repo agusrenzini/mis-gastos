@@ -11,7 +11,7 @@ export function renderLogin(root) {
     submitLabel: 'Ingresar',
     busyLabel: 'Ingresando…',
     register: false,
-    footer: `¿No tenés cuenta? <a class="link" href="#/registro">Creá una</a>`,
+    footer: `<span>¿Es tu primera vez?</span><a class="btn btn--outline btn--block" href="#/registro">Crear cuenta</a>`,
     submit: (form) => api.login(form.elements.username.value, form.elements.password.value),
   });
 }
@@ -23,7 +23,7 @@ export function renderRegister(root) {
     submitLabel: 'Crear cuenta',
     busyLabel: 'Creando cuenta…',
     register: true,
-    footer: `¿Ya tenés cuenta? <a class="link" href="#/ingresar">Ingresá</a>`,
+    footer: `<span>¿Ya tenés cuenta?</span><a class="btn btn--outline btn--block" href="#/ingresar">Ingresar</a>`,
     submit: (form) => api.register({
       username: form.elements.username.value,
       password: form.elements.password.value,
@@ -59,7 +59,7 @@ function mountAuthForm(root, options) {
       }) : ''}
 
       <button type="submit" class="btn btn--primary btn--block btn--lg">${icon('check-circle')}<span>${options.submitLabel}</span></button>
-      <p class="auth-card__footer">${options.footer}</p>
+      <div class="auth-card__footer">${options.footer}</div>
     </form>`;
 
   const form = root.querySelector('form');

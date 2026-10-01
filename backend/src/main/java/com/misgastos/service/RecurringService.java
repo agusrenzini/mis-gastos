@@ -286,7 +286,10 @@ public class RecurringService {
         try {
             obligations.saveAndFlush(o);
         } catch (DataIntegrityViolationException e) {
-            throw new ApiException(HttpStatus.CONFLICT, "Ese gasto ya está vinculado a otro gasto fijo.");
+            if (ConstraintViolations.isViolationOf(e, "uk_obligation_expense")) {
+                throw new ApiException(HttpStatus.CONFLICT, "Ese gasto ya está vinculado a otro gasto fijo.");
+            }
+            throw e;
         }
         return obligation(userId, id);
     }

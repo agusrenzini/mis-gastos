@@ -44,7 +44,7 @@ function mount(root, values, id) {
             ? `<button type="button" class="btn btn--soft btn--small" data-action="resume">Reanudar</button>`
             : values.state !== 'FINISHED' ? `<button type="button" class="btn btn--soft btn--small" data-action="pause">Pausar</button>` : ''}
           ${values.state === 'ACTIVE' || values.state === 'PAUSED'
-            ? `<button type="button" class="btn btn--outline btn--small" data-action="finish">Finalizar</button>` : ''}
+            ? `<button type="button" class="btn btn--outline btn--small" data-action="finish">Cancelar gasto fijo</button>` : ''}
         </div>
       </section>` : ''}
 
@@ -164,16 +164,16 @@ function mount(root, values, id) {
   }));
   root.querySelector('[data-action="finish"]')?.addEventListener('click', () => act(() => api.finishRecurring(id), {
     confirm: {
-      title: `¿Finalizar ${values.description}?`,
-      message: `Termina en ${formatMonth(monthOf(todayISO())).toLowerCase()}: no se preparan meses siguientes. El historial se conserva.`,
-      confirmLabel: 'Finalizar',
+      title: `¿Cancelar ${values.description}?`,
+      message: `Termina en ${formatMonth(monthOf(todayISO())).toLowerCase()}: no se preparan meses siguientes. Los meses anteriores y lo pagado se conservan.`,
+      confirmLabel: 'Cancelar gasto fijo',
     },
-    done: 'Gasto fijo finalizado',
+    done: 'Gasto fijo cancelado desde el mes que viene',
   }));
   form.querySelector('[data-action="delete"]')?.addEventListener('click', () => act(() => api.deleteRecurring(id), {
     confirm: {
       title: `¿Eliminar ${values.description}?`,
-      message: 'Se borran la configuración y los meses sin pagar. Si ya tiene meses pagados, usá Finalizar para conservar el historial.',
+      message: 'Se borran la configuración y los meses sin pagar. Si ya tiene meses pagados, usá “Cancelar gasto fijo” para conservar el historial.',
       confirmLabel: 'Eliminar',
       danger: true,
     },

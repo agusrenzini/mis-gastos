@@ -1,44 +1,76 @@
-// Formulario de ingreso: nuevo (#/ingreso/nuevo) o consultar, editar y eliminar (#/ingreso/12).
+// Formulario de ingreso:
+//   #/ingreso/nuevo               → nuevo ingreso manual
+//   #/ingreso/esperado/2026-11    → nuevo ingreso esperado para ese mes (desde Plan)
+//   #/ingreso/12                  → consultar, editar, marcar como recibido o eliminar
+//   voz                           → confirmación de un ingreso dictado (lo abre voice-confirm.js)
 import { api } from '../api.js';
 import { INCOME_TYPES } from '../categories.js';
 import { todayISO } from '../dates.js';
-import { formatAmountInput, formatMoney, parseAmountInput } from '../format.js';
+import { formatAmountInput, formatMoney, formatMonth, parseAmountInput } from '../format.js';
+import { getLastSection } from '../state.js';
 import { confirmDialog, errorState, escapeHtml, icon, loadingState, showToast, topBar } from '../ui.js';
+import { kindSwitch } from './expense-form.js';
 
 const MAX_AMOUNT = 9_999_999_999.99;
-const BACK = '#/ingresos';
 
-export function renderIncomeForm(root, { id } = {}) {
+/**
+ * id: editar uno existente · expectedMonth: "2026-11" para cargar un esperado de ese mes ·
+ * voice: datos interpretados por voz · onSwitchKind(kind, edits): pasar a egreso sin perder lo cargado.
+ */
+export function renderIncomeForm(root, { id = null, expectedMonth = null, voice = null, onSwitchKind = null, onSaved = null } = {}) {
+  const back = getLastSection(expectedMonth ? '#/plan' : '#/movimientos');
+  if (voice) {
+    mount(root, voice, null, { back, mode: 'voice', onSwitchKind, onSaved });
+    return;
+  }
   if (!id) {
-    mount(root, { description: '', amount: null, date: todayISO(), type: 'SUELDO', status: 'RECEIVED' });
+    const today = todayISO();
+    const values = expectedMonth
+      ? { description: 'Sueldo', amount: null, date: expectedMonth === today.slice(0, 7) ? today : `${expectedMonth}-01`,
+          type: 'SUELDO', status: 'EXPECTED' }
+      : { description: '', amount: null, date: today, type: 'SUELDO', status: 'RECEIVED' };
+    mount(root, values, null, { back, mode: expectedMonth ? 'expected' : 'new' });
     return;
   }
   const load = async () => {
-    root.innerHTML = topBar('Ingreso', { back: BACK }) + loadingState();
+    root.innerHTML = topBar('Ingreso', { back }) + loadingState();
     try {
-      mount(root, await api.getIncome(id), id);
+      mount(root, await api.getIncome(id), id, { back, mode: 'edit' });
     } catch (error) {
-      root.innerHTML = topBar('Ingreso', { back: BACK }) + errorState(error.message);
+      root.innerHTML = topBar('Ingreso', { back }) + errorState(error.message);
       root.querySelector('[data-action="retry"]')?.addEventListener('click', load);
     }
   };
   load();
 }
 
-function mount(root, values, id) {
+function mount(root, values, id, { back: BACK, mode, onSwitchKind = null, onSaved = null }) {
   const editing = Boolean(id);
+  const title = editing ? 'Editar ingreso'
+    : mode === 'voice' ? 'Confirmar movimiento'
+      : mode === 'expected' ? `Ingreso esperado · ${formatMonth(values.date.slice(0, 7))}` : 'Nuevo ingreso';
   root.innerHTML = `
-    ${topBar(editing ? 'Editar ingreso' : 'Nuevo ingreso', { back: BACK })}
+    ${topBar(title, { back: BACK })}
+    ${editing ? '<p class="kind-badge kind-badge--income">+ Ingreso</p>' : kindSwitch('INCOME')}
+    ${mode === 'voice' ? `
+      <section class="confirm-intro">
+        <span class="pill pill--mint">Capturado por voz</span>
+        <h2 class="confirm-intro__title">¿Está bien este ingreso?</h2>
+        <p class="transcript-pill">${icon('mic')}<q>${escapeHtml(values.transcript)}</q></p>
+      </section>` : ''}
+    ${mode === 'expected' ? `
+      <p class="notice">${icon('info')}<span>Un ingreso <strong>esperado</strong> sirve para planificar: todavía no es dinero disponible. Cuando lo cobres, marcalo como recibido.</span></p>` : ''}
     <form class="expense-form" novalidate>
       <div class="form-alert" role="alert" hidden></div>
 
       <section class="card amount-card">
-        <label class="amount-card__label" for="amount">Importe del ingreso</label>
+        <label class="amount-card__label" for="amount">${mode === 'voice' ? 'Monto detectado' : 'Importe del ingreso'}</label>
         <div class="amount-card__row">
           <span class="amount-card__currency" aria-hidden="true">$</span>
           <input id="amount" name="amount" class="amount-card__input amount" inputmode="decimal" autocomplete="off"
                  placeholder="0" value="${formatAmountInput(values.amount)}" aria-describedby="amount-error">
         </div>
+        ${mode === 'voice' && !values.amount ? '<p class="field-hint">No pude detectar el monto: ingresalo.</p>' : ''}
         <p id="amount-error" class="field-error" hidden></p>
       </section>
 
@@ -78,11 +110,20 @@ function mount(root, values, id) {
         ${editing && values.status === 'EXPECTED'
           ? `<button type="button" class="btn btn--soft btn--block" data-action="receive">${icon('income')}Marcar como recibido</button>` : ''}
         ${editing ? `<button type="button" class="btn btn--danger-ghost btn--block" data-action="delete">${icon('trash')}Eliminar ingreso</button>` : ''}
-        <a class="btn btn--text btn--block" href="${BACK}">Cancelar</a>
+        <a class="btn btn--text btn--block" href="${BACK}">${mode === 'voice' ? 'Descartar' : 'Cancelar'}</a>
       </div>
     </form>`;
 
   const form = root.querySelector('form');
+
+  root.querySelector('.kind-switch')?.addEventListener('change', (event) => {
+    if (event.target.value !== 'EXPENSE') return;
+    const amount = parseAmountInput(form.elements.amount.value);
+    const edits = { amount: amount > 0 ? amount : null, date: form.elements.date.value || todayISO() };
+    if (onSwitchKind) onSwitchKind('EXPENSE', edits);
+    else location.hash = '#/nuevo';
+  });
+
   const refresh = () => {
     const received = form.elements.status.value === 'RECEIVED';
     root.querySelector('[data-slot="status-hint"]').textContent = received
@@ -102,20 +143,25 @@ function mount(root, values, id) {
     if (value > 0) form.elements.amount.value = formatAmountInput(value);
   });
 
+  let saving = false;
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
+    if (saving) return; // un segundo toque mientras se guarda no crea otro ingreso
     const payload = read(form);
     if (!payload) return;
+    saving = true;
     const button = form.querySelector('[type="submit"]');
     button.disabled = true;
     form.querySelector('.form-alert').hidden = true;
     try {
       if (editing) await api.updateIncome(id, payload);
       else await api.createIncome(payload);
+      onSaved?.();
       showToast(editing ? 'Cambios guardados' : `Ingreso de ${formatMoney(payload.amount)} guardado`);
       location.hash = BACK;
     } catch (error) {
       showErrors(form, error);
+      saving = false;
       button.disabled = false;
     }
   });
