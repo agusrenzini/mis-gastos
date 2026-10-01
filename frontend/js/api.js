@@ -11,12 +11,30 @@ export class ApiError extends Error {
 
 const OFFLINE_MESSAGE = 'No hay conexión con el servidor. Revisá tu internet e intentá de nuevo.';
 
-async function request(method, path, body) {
+/** El servidor manda la cookie XSRF-TOKEN; hay que devolverla en un header en cada POST/PUT/DELETE. */
+function csrfToken() {
+  const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+/**
+ * Si el servidor responde 401 (sesión vencida o cuenta desactivada) o pide cambiar la contraseña,
+ * se avisa con un evento y app.js lleva a la pantalla que corresponda.
+ * silent: para las llamadas de login/registro, que manejan el 401 en el propio formulario.
+ */
+async function request(method, path, body, { silent = false } = {}) {
+  const headers = body ? { 'Content-Type': 'application/json' } : {};
+  if (method !== 'GET') {
+    const token = csrfToken();
+    if (token) headers['X-XSRF-TOKEN'] = token;
+  }
+
   let response;
   try {
     response = await fetch(`/api${path}`, {
       method,
-      headers: body ? { 'Content-Type': 'application/json' } : {},
+      headers,
+      credentials: 'same-origin',
       body: body ? JSON.stringify(body) : undefined,
     });
   } catch {
@@ -30,6 +48,13 @@ async function request(method, path, body) {
     data = await response.json();
   } catch {
     // Respuesta sin JSON (por ejemplo, un proxy caído)
+  }
+
+  if (!silent && response.status === 401) {
+    window.dispatchEvent(new CustomEvent('auth:required'));
+  }
+  if (!silent && response.status === 403 && data?.message === 'Antes de seguir, cambiá tu contraseña.') {
+    window.dispatchEvent(new CustomEvent('auth:must-change-password'));
   }
 
   if (!response.ok) {
@@ -53,4 +78,18 @@ export const api = {
   deleteExpense: (id) => request('DELETE', `/expenses/${id}`),
   getDashboard: (month) => request('GET', `/dashboard${query({ month })}`),
   getStatistics: (period, date) => request('GET', `/statistics${query({ period, date })}`),
+
+  // Cuenta
+  me: () => request('GET', '/auth/me', null, { silent: true }),
+  login: (username, password) => request('POST', '/auth/login', { username, password }, { silent: true }),
+  register: (data) => request('POST', '/auth/register', data, { silent: true }),
+  logout: () => request('POST', '/auth/logout', null, { silent: true }),
+  changePassword: (data) => request('POST', '/auth/change-password', data),
+
+  // Administración (el servidor rechaza estas llamadas si no sos administradora)
+  adminUsers: () => request('GET', '/admin/users'),
+  adminSetActive: (id, active) => request('POST', `/admin/users/${id}/${active ? 'activate' : 'deactivate'}`),
+  adminResetPassword: (id) => request('POST', `/admin/users/${id}/reset-password`),
+  adminUnassigned: () => request('GET', '/admin/unassigned-expenses'),
+  adminAssignUnassigned: () => request('POST', '/admin/unassigned-expenses/assign-to-me'),
 };

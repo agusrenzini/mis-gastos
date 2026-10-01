@@ -2,9 +2,11 @@ package com.misgastos.controller;
 
 import com.misgastos.dto.DashboardResponse;
 import com.misgastos.dto.StatisticsResponse;
+import com.misgastos.security.AppUserPrincipal;
 import com.misgastos.service.StatisticsPeriod;
 import com.misgastos.service.StatisticsService;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -28,10 +30,11 @@ public class StatisticsController {
 
     /** Ejemplo: GET /api/dashboard?month=2026-09 (sin month usa el mes actual). */
     @GetMapping("/dashboard")
-    public DashboardResponse dashboard(@RequestParam(required = false) String month) {
+    public DashboardResponse dashboard(@AuthenticationPrincipal AppUserPrincipal user,
+                                       @RequestParam(required = false) String month) {
         LocalDate today = LocalDate.now(clock);
         YearMonth yearMonth = month == null ? YearMonth.from(today) : YearMonth.parse(month);
-        return service.dashboard(yearMonth, today);
+        return service.dashboard(user.id(), yearMonth, today);
     }
 
     /**
@@ -40,9 +43,10 @@ public class StatisticsController {
      */
     @GetMapping("/statistics")
     public StatisticsResponse statistics(
+            @AuthenticationPrincipal AppUserPrincipal user,
             @RequestParam(defaultValue = "MONTH") StatisticsPeriod period,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         LocalDate today = LocalDate.now(clock);
-        return service.statistics(period, date != null ? date : today, today);
+        return service.statistics(user.id(), period, date != null ? date : today, today);
     }
 }

@@ -14,12 +14,24 @@ export function takeVoiceDraft() {
   return draft;
 }
 
-// Preferencias del teléfono. localStorage puede fallar (modo privado), por eso el try/catch.
-const PAYMENT_KEY = 'mis-gastos:payment-method';
+// Usuario con sesión iniciada: { username, role, mustChangePassword } o null.
+let currentUser = null;
+
+export function getCurrentUser() {
+  return currentUser;
+}
+
+export function setCurrentUser(user) {
+  currentUser = user;
+}
+
+// Preferencias del teléfono, separadas por usuario (por si dos personas usan el mismo celular).
+// localStorage puede fallar (modo privado), por eso el try/catch.
+const paymentKey = () => `mis-gastos:payment-method:${currentUser?.username ?? ''}`;
 
 export function getPreferredPaymentMethod() {
   try {
-    return localStorage.getItem(PAYMENT_KEY) || 'EFECTIVO';
+    return localStorage.getItem(paymentKey()) || 'EFECTIVO';
   } catch {
     return 'EFECTIVO';
   }
@@ -27,7 +39,7 @@ export function getPreferredPaymentMethod() {
 
 export function setPreferredPaymentMethod(key) {
   try {
-    localStorage.setItem(PAYMENT_KEY, key);
+    localStorage.setItem(paymentKey(), key);
   } catch {
     // Sin almacenamiento disponible: no pasa nada, se usa el valor por defecto.
   }

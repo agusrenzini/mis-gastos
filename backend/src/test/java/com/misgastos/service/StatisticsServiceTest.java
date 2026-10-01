@@ -20,6 +20,7 @@ import static org.mockito.Mockito.when;
 class StatisticsServiceTest {
 
     private static final LocalDate TODAY = LocalDate.of(2026, 9, 26); // sábado
+    private static final Long USER_ID = 7L;
 
     private static Expense expense(String amount, String date, Category category) {
         Expense e = new Expense();
@@ -63,19 +64,19 @@ class StatisticsServiceTest {
     @Test
     void monthStatisticsGroupByCategoryAndDay() {
         ExpenseRepository repository = mock(ExpenseRepository.class);
-        when(repository.findByDateBetweenOrderByDateDescCreatedAtDesc(any(), any())).thenReturn(List.of());
-        when(repository.findByDateBetweenOrderByDateDescCreatedAtDesc(
+        when(repository.findByUserIdAndDateBetweenOrderByDateDescCreatedAtDesc(eq(USER_ID), any(), any())).thenReturn(List.of());
+        when(repository.findByUserIdAndDateBetweenOrderByDateDescCreatedAtDesc(eq(USER_ID),
                 eq(LocalDate.parse("2026-09-01")), eq(LocalDate.parse("2026-09-30"))))
                 .thenReturn(List.of(
                         expense("6000", "2026-09-26", Category.COMIDA),
                         expense("3000", "2026-09-02", Category.TRANSPORTE),
                         expense("1000", "2026-09-02", Category.COMIDA)));
-        when(repository.findByDateBetweenOrderByDateDescCreatedAtDesc(
+        when(repository.findByUserIdAndDateBetweenOrderByDateDescCreatedAtDesc(eq(USER_ID),
                 eq(LocalDate.parse("2026-08-01")), eq(LocalDate.parse("2026-08-31"))))
                 .thenReturn(List.of(expense("8000", "2026-08-10", Category.OTROS)));
 
         StatisticsResponse stats = new StatisticsService(repository)
-                .statistics(StatisticsPeriod.MONTH, TODAY, TODAY);
+                .statistics(USER_ID, StatisticsPeriod.MONTH, TODAY, TODAY);
 
         assertThat(stats.total()).isEqualByComparingTo("10000");
         assertThat(stats.previousTotal()).isEqualByComparingTo("8000");
@@ -91,11 +92,11 @@ class StatisticsServiceTest {
     @Test
     void yearTimelineHasTwelveMonths() {
         ExpenseRepository repository = mock(ExpenseRepository.class);
-        when(repository.findByDateBetweenOrderByDateDescCreatedAtDesc(any(), any()))
+        when(repository.findByUserIdAndDateBetweenOrderByDateDescCreatedAtDesc(eq(USER_ID), any(), any()))
                 .thenReturn(List.of(expense("500", "2026-03-15", Category.SALUD)));
 
         StatisticsResponse stats = new StatisticsService(repository)
-                .statistics(StatisticsPeriod.YEAR, TODAY, TODAY);
+                .statistics(USER_ID, StatisticsPeriod.YEAR, TODAY, TODAY);
 
         assertThat(stats.from()).isEqualTo("2026-01-01");
         assertThat(stats.to()).isEqualTo("2026-12-31");

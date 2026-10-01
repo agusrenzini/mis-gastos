@@ -63,8 +63,7 @@ Después copiá `backend/.env.example` como `backend/.env` y completá `DB_PASSW
 | `DATABASE_URL` | `jdbc:postgresql://localhost:5432/mis_gastos` | URL JDBC de la base |
 | `DB_USERNAME` | `mis_gastos` | Usuario de la base |
 | `DB_PASSWORD` | — | Contraseña de la base |
-| `APP_PASSWORD` | — | Opcional. Si tiene valor, la app pide usuario y contraseña. **Usala al publicar.** |
-| `APP_USERNAME` | `yo` | Usuario para `APP_PASSWORD` (por defecto `yo`) |
+| `REMEMBER_ME_KEY` | — | Clave secreta larga para que la sesión quede abierta en el celular aunque el servidor se reinicie. **Usala al publicar.** Sin ella, hay que volver a ingresar después de cada reinicio |
 | `SPRING_PROFILES_ACTIVE` | `prod` | En producción. En tu PC se usa `dev` automáticamente |
 | `PORT` | `8080` | Puerto (los hostings lo definen solos) |
 
@@ -137,13 +136,14 @@ Necesitás un hosting para la app y una base PostgreSQL en la nube. Una combinac
 3. En Render, cargá las variables de entorno:
    - `DATABASE_URL` en formato JDBC: `jdbc:postgresql://HOST:5432/BASE?sslmode=require`. Ojo: debe empezar con `jdbc:postgresql://`, no con `postgres://`.
    - `DB_USERNAME` y `DB_PASSWORD`
-   - `APP_PASSWORD`: una clave larga, para que nadie más vea tus gastos
+   - `REMEMBER_ME_KEY`: una clave larga al azar (generala en PowerShell con `$b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)`). No la cambies después: si cambia, todos tienen que volver a ingresar.
 4. Render te da una URL con HTTPS, por ejemplo `https://mis-gastos.onrender.com`.
+5. La primera vez, registrá tu cuenta y habilitala como administradora (ver [Cuentas y administración](#8-cuentas-y-administración)).
 
 ## 6. Instalar la app en el celular
 
 1. Abrí la URL publicada en **Chrome** (Android).
-2. Si configuraste `APP_PASSWORD`, ingresá el usuario (`yo`, salvo que cambies `APP_USERNAME`) y la contraseña.
+2. Ingresá con tu usuario y contraseña, o creá una cuenta con **Creá una**.
 3. Menú **⋮** → **Instalar app** o **Agregar a pantalla principal**. También podés instalarla desde **Ajustes** dentro de la app.
 4. Aparece el ícono de Mis Gastos y la app se abre a pantalla completa, sin la barra del navegador.
 
@@ -163,7 +163,8 @@ mis-gastos/
 │       ├── repository/              consultas a la base (Spring Data JPA)
 │       ├── model/                   entidad Expense y enums (Category, PaymentMethod…)
 │       ├── dto/                     forma exacta de lo que entra y sale de la API
-│       └── config/                  zona horaria y contraseña opcional
+│       ├── security/                login, sesiones, permisos y límite de intentos
+│       └── config/                  zona horaria
 ├── frontend/
 │   ├── index.html                   única página; las pantallas se dibujan con JS
 │   ├── manifest.json                datos de la PWA (nombre, íconos, colores)
@@ -192,6 +193,17 @@ mis-gastos/
 | `DELETE` | `/api/expenses/{id}` | Elimina un gasto |
 | `GET` | `/api/dashboard?month=2026-09` | Resumen para Inicio |
 | `GET` | `/api/statistics?period=MONTH&date=2026-09-26` | Estadísticas: `WEEK`, `MONTH` o `YEAR` |
+| `POST` | `/api/auth/register` | Crea una cuenta común e inicia sesión |
+| `POST` | `/api/auth/login` | Inicia sesión |
+| `POST` | `/api/auth/logout` | Cierra la sesión |
+| `GET` | `/api/auth/me` | Usuario con sesión iniciada |
+| `POST` | `/api/auth/change-password` | Cambia la contraseña propia |
+| `GET` | `/api/admin/users` | **Admin.** Usuarios con fecha de registro y resumen de actividad |
+| `POST` | `/api/admin/users/{id}/deactivate` · `/activate` | **Admin.** Desactiva o reactiva una cuenta |
+| `POST` | `/api/admin/users/{id}/reset-password` | **Admin.** Genera una contraseña temporal |
+| `GET` · `POST` | `/api/admin/unassigned-expenses` · `/assign-to-me` | **Admin.** Gastos anteriores a las cuentas |
+
+Todas las rutas, salvo registro e inicio de sesión, requieren sesión iniciada. Cada usuario solo ve y modifica sus propios gastos: pedir el gasto de otro por su id responde 404. Los `POST`/`PUT`/`DELETE` llevan el header `X-XSRF-TOKEN` con el valor de la cookie `XSRF-TOKEN` (protección CSRF; `api.js` lo hace solo).
 
 Ejemplo de gasto:
 
@@ -208,3 +220,34 @@ Ejemplo de gasto:
 ```
 
 Más detalles sobre las decisiones y la evolución prevista en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
+
+---
+
+## 8. Cuentas y administración
+
+- **Registro:** solo usuario (3 a 30 letras, números, `.`, `-` o `_`; mayúsculas y minúsculas son lo mismo) y contraseña (mínimo 6 caracteres). Sin correo ni verificación.
+- Las contraseñas se guardan con **BCrypt**: ni la base ni el panel permiten verlas.
+- **Límite de intentos:** 10 intentos fallidos de login por usuario o 30 por IP cada 15 minutos, y 10 registros por IP por hora. Al pasarlo, hay que esperar unos minutos.
+- La sesión queda abierta 60 días en cada dispositivo (cookie "recordarme").
+- Toda cuenta nueva es **común**. Nadie puede registrarse como administradora.
+
+### Habilitar tu cuenta como administradora (una sola vez)
+
+1. Abrí la app y **registrá tu cuenta** normalmente (por ejemplo, `agus`).
+2. Entrá a la base y ejecutá, con tu usuario:
+   ```sql
+   UPDATE app_user SET role = 'ADMIN' WHERE username = 'agus';
+   ```
+   - **Neon:** en la consola de Neon, tu proyecto → **SQL Editor** → pegá la línea → **Run**.
+   - **Local:** `psql -h localhost -U mis_gastos -d mis_gastos` y pegá la línea.
+3. Recargá la app. En **Ajustes** aparece **Panel de administración** (no hace falta volver a ingresar).
+
+Para quitarle el rol a alguien: `UPDATE app_user SET role = 'USER' WHERE username = '...';`
+
+### Usar el panel (Ajustes → Panel de administración)
+
+- **Usuarios:** cada cuenta con su fecha de registro, cantidad de gastos y fecha de la última carga. No muestra contraseñas ni el detalle de los gastos.
+- **Desactivar / Reactivar:** una cuenta desactivada no puede entrar (si tenía la app abierta, se le cierra la sesión), pero sus gastos se conservan. Al reactivarla vuelve todo como estaba. No podés desactivar tu propia cuenta.
+- **Restablecer contraseña** (cuando alguien te avisa que se la olvidó): genera una contraseña temporal del tipo `ab3k-x9mp-q2rt`, **que se muestra una sola vez**. Pasásela por un medio privado. La anterior deja de funcionar y se cierran sus sesiones abiertas. Al ingresar con la temporal, la app le pide elegir una nueva antes de seguir.
+- **Gastos anteriores a las cuentas:** los gastos cargados antes de esta versión no tienen dueño y nadie los ve. El panel muestra cuántos son y de qué fechas. Con **Asignarlos a mi cuenta** pasan a ser tuyos.
+

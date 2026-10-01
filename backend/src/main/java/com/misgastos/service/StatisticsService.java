@@ -41,19 +41,19 @@ public class StatisticsService {
         this.repository = repository;
     }
 
-    public DashboardResponse dashboard(YearMonth month, LocalDate today) {
+    public DashboardResponse dashboard(Long userId, YearMonth month, LocalDate today) {
         LocalDate from = month.atDay(1);
         LocalDate to = month.atEndOfMonth();
-        List<Expense> expenses = find(from, to);
+        List<Expense> expenses = find(userId, from, to);
         BigDecimal total = sum(expenses);
 
         YearMonth previous = month.minusMonths(1);
-        BigDecimal previousTotal = sum(find(previous.atDay(1), previous.atEndOfMonth()));
+        BigDecimal previousTotal = sum(find(userId, previous.atDay(1), previous.atEndOfMonth()));
 
         LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-        BigDecimal weekTotal = sum(find(weekStart, weekStart.plusDays(6)));
+        BigDecimal weekTotal = sum(find(userId, weekStart, weekStart.plusDays(6)));
 
-        List<ExpenseResponse> recent = repository.findTop5ByOrderByDateDescCreatedAtDesc()
+        List<ExpenseResponse> recent = repository.findTop5ByUserIdOrderByDateDescCreatedAtDesc(userId)
                 .stream().map(ExpenseResponse::from).toList();
 
         return new DashboardResponse(
@@ -68,15 +68,15 @@ public class StatisticsService {
                 recent);
     }
 
-    public StatisticsResponse statistics(StatisticsPeriod period, LocalDate reference, LocalDate today) {
+    public StatisticsResponse statistics(Long userId, StatisticsPeriod period, LocalDate reference, LocalDate today) {
         LocalDate from = startOf(period, reference);
         LocalDate to = endOf(period, from);
         LocalDate previousFrom = startOf(period, previousReference(period, from));
         LocalDate previousTo = endOf(period, previousFrom);
 
-        List<Expense> expenses = find(from, to);
+        List<Expense> expenses = find(userId, from, to);
         BigDecimal total = sum(expenses);
-        BigDecimal previousTotal = sum(find(previousFrom, previousTo));
+        BigDecimal previousTotal = sum(find(userId, previousFrom, previousTo));
         List<CategoryTotal> categories = byCategory(expenses, total);
 
         return new StatisticsResponse(
@@ -121,8 +121,8 @@ public class StatisticsService {
 
     // --- Cálculos ---
 
-    private List<Expense> find(LocalDate from, LocalDate to) {
-        return repository.findByDateBetweenOrderByDateDescCreatedAtDesc(from, to);
+    private List<Expense> find(Long userId, LocalDate from, LocalDate to) {
+        return repository.findByUserIdAndDateBetweenOrderByDateDescCreatedAtDesc(userId, from, to);
     }
 
     static BigDecimal sum(List<Expense> expenses) {

@@ -1,0 +1,2 @@
+# Solo en el classpath de tests: impide que los tests usen una base que no sea H2.
+org.springframework.boot.EnvironmentPostProcessor=com.misgastos.IsolatedDatabaseGuard

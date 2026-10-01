@@ -36,13 +36,18 @@ ExpenseController → ExpenseService → ExpenseRepository → PostgreSQL
 | Estadísticas calculadas en Java | Con los datos de una persona alcanza con sumar en memoria, y el código es fácil de leer y testear. Si crecen mucho, se pasan a consultas SQL con `GROUP BY` sin cambiar la API. |
 | Hash routing (`#/inicio`) | Funciona sin configurar el servidor y con la PWA offline. |
 | Sin frameworks ni librerías en el frontend | Los gráficos son SVG y HTML hechos a mano; el JS completo pesa pocos KB. |
-| HTTP Basic opcional (`APP_PASSWORD`) | Es la protección mínima para un único usuario. Sin OAuth ni JWT. |
+| Cuentas con Spring Security: sesión en cookie HttpOnly + cookie "recordarme" firmada | Sin JWT: la sesión vive en el servidor y se puede cortar al instante. La cookie "recordarme" mantiene la sesión en el celular aunque Render reinicie el servidor, y deja de valer si cambia la contraseña. |
+| Cada consulta de gastos filtra por `user_id` | El repositorio solo expone métodos `...ByUserId...`; un id de otro usuario responde 404, igual que uno inexistente. |
+| `ActiveUserFilter` relee al usuario en cada pedido a `/api` | Desactivar una cuenta, restablecer su contraseña o cambiarle el rol tiene efecto inmediato, aunque tenga la sesión abierta. Es una consulta por pedido: alcanza para este volumen. |
+| CSRF con cookie `XSRF-TOKEN` + header | La sesión viaja en una cookie, así que hace falta. `api.js` copia el token en cada cambio. |
+| Rol ADMIN solo por SQL | Ningún endpoint puede crear administradores: no hay forma de escalar permisos desde la app. |
+| Límite de intentos en memoria | Hay una sola instancia del servidor. Con varias, pasaría a la base o a Redis. |
 
 ## Cómo agregar ingresos más adelante
 
 El modelo está pensado para crecer sin rehacer nada:
 
-1. **Base de datos:** nueva migración `V2__add_movement_type.sql`:
+1. **Base de datos:** nueva migración `V3__add_movement_type.sql`:
    ```sql
    ALTER TABLE expense ADD COLUMN type VARCHAR(10) NOT NULL DEFAULT 'EXPENSE';
    ALTER TABLE expense RENAME TO movement;  -- opcional, si se quiere un nombre más general
@@ -77,5 +82,5 @@ Para una versión futura con carga offline:
 - OCR de tickets
 - Conexión con Mercado Pago o bancos
 - Notificaciones
-- Multiusuario y login con Google
+- Login con Google
 - Sincronización offline completa

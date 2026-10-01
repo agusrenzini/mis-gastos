@@ -1,12 +1,20 @@
 // Punto de entrada: navegación entre pantallas según el "#" de la URL.
 //   #/inicio · #/movimientos · #/nuevo · #/voz · #/confirmar · #/gasto/12 · #/graficos · #/ajustes
+//   #/ingresar · #/registro · #/contrasena · #/admin
+// Antes de mostrar cualquier pantalla se consulta la sesión: sin sesión solo se puede ingresar o registrarse.
+import { api } from './api.js';
 import { setupPwa } from './install.js';
+import { renderAdmin } from './screens/admin.js';
+import { renderLogin, renderRegister } from './screens/auth.js';
+import { renderChangePassword } from './screens/change-password.js';
 import { renderExpenseForm } from './screens/expense-form.js';
 import { renderHome } from './screens/home.js';
 import { renderMovements } from './screens/movements.js';
 import { renderSettings } from './screens/settings.js';
 import { renderStatistics } from './screens/statistics.js';
 import { renderVoice } from './screens/voice.js';
+import { getCurrentUser, setCurrentUser } from './state.js';
+import { errorState } from './ui.js';
 
 const ROUTES = [
   { pattern: /^inicio$/, nav: 'inicio', render: renderHome },
@@ -17,6 +25,10 @@ const ROUTES = [
   { pattern: /^confirmar$/, render: (root) => renderExpenseForm(root, { mode: 'voice' }) },
   { pattern: /^gasto\/(\d+)$/, render: (root, [id]) => renderExpenseForm(root, { mode: 'edit', id }) },
   { pattern: /^voz$/, render: renderVoice },
+  { pattern: /^contrasena$/, render: renderChangePassword },
+  { pattern: /^admin$/, render: renderAdmin, admin: true },
+  { pattern: /^ingresar$/, render: renderLogin, public: true },
+  { pattern: /^registro$/, render: renderRegister, public: true },
 ];
 
 const app = document.getElementById('app');
@@ -27,6 +39,24 @@ function navigate() {
   const path = location.hash.replace(/^#\/?/, '');
   const route = ROUTES.find((r) => r.pattern.test(path));
   if (!route) {
+    location.replace('#/inicio');
+    return;
+  }
+
+  const user = getCurrentUser();
+  if (!user && !route.public) {
+    location.replace('#/ingresar');
+    return;
+  }
+  if (user && route.public) {
+    location.replace('#/inicio');
+    return;
+  }
+  if (user?.mustChangePassword && path !== 'contrasena') {
+    location.replace('#/contrasena');
+    return;
+  }
+  if (route.admin && user?.role !== 'ADMIN') {
     location.replace('#/inicio');
     return;
   }
@@ -61,7 +91,38 @@ function watchConnection() {
   update();
 }
 
-window.addEventListener('hashchange', navigate);
+// La sesión venció o la cuenta fue desactivada: volver a pedir usuario y contraseña.
+window.addEventListener('auth:required', () => {
+  if (!getCurrentUser()) return;
+  setCurrentUser(null);
+  location.hash = '#/ingresar';
+});
+
+window.addEventListener('auth:must-change-password', () => {
+  const user = getCurrentUser();
+  if (user) setCurrentUser({ ...user, mustChangePassword: true });
+  location.hash = '#/contrasena';
+});
+
+async function start() {
+  try {
+    setCurrentUser(await api.me());
+  } catch (error) {
+    if (error.status !== 401) {
+      // Sin conexión o servidor caído: no sabemos si hay sesión.
+      const screen = document.createElement('div');
+      screen.className = 'screen';
+      screen.innerHTML = errorState(error.message);
+      app.replaceChildren(screen);
+      screen.querySelector('[data-action="retry"]').addEventListener('click', start);
+      return;
+    }
+    setCurrentUser(null);
+  }
+  window.addEventListener('hashchange', navigate);
+  navigate();
+}
+
 watchConnection();
 setupPwa();
-navigate();
+start();

@@ -23,6 +23,10 @@ public class Expense {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** Dueño del gasto. NULL solo en gastos anteriores a las cuentas, hasta que se asignan. */
+    @Column(name = "user_id")
+    private Long userId;
+
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal amount;
 
@@ -67,6 +71,9 @@ public class Expense {
     }
 
     public Long getId() { return id; }
+
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }

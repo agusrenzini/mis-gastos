@@ -24,42 +24,44 @@ public class ExpenseService {
     }
 
     @Transactional
-    public ExpenseResponse create(ExpenseRequest request) {
+    public ExpenseResponse create(Long userId, ExpenseRequest request) {
         Expense expense = new Expense();
+        expense.setUserId(userId);
         apply(request, expense);
         return ExpenseResponse.from(repository.save(expense));
     }
 
     /** Sin fechas devuelve todos los gastos; con una o ambas, filtra por ese rango. */
     @Transactional(readOnly = true)
-    public List<ExpenseResponse> list(LocalDate from, LocalDate to) {
+    public List<ExpenseResponse> list(Long userId, LocalDate from, LocalDate to) {
         List<Expense> expenses = (from == null && to == null)
-                ? repository.findAllByOrderByDateDescCreatedAtDesc()
-                : repository.findByDateBetweenOrderByDateDescCreatedAtDesc(
+                ? repository.findByUserIdOrderByDateDescCreatedAtDesc(userId)
+                : repository.findByUserIdAndDateBetweenOrderByDateDescCreatedAtDesc(userId,
                         from != null ? from : MIN_DATE,
                         to != null ? to : MAX_DATE);
         return expenses.stream().map(ExpenseResponse::from).toList();
     }
 
     @Transactional(readOnly = true)
-    public ExpenseResponse get(Long id) {
-        return ExpenseResponse.from(find(id));
+    public ExpenseResponse get(Long userId, Long id) {
+        return ExpenseResponse.from(find(userId, id));
     }
 
     @Transactional
-    public ExpenseResponse update(Long id, ExpenseRequest request) {
-        Expense expense = find(id);
+    public ExpenseResponse update(Long userId, Long id, ExpenseRequest request) {
+        Expense expense = find(userId, id);
         apply(request, expense);
         return ExpenseResponse.from(repository.saveAndFlush(expense));
     }
 
     @Transactional
-    public void delete(Long id) {
-        repository.delete(find(id));
+    public void delete(Long userId, Long id) {
+        repository.delete(find(userId, id));
     }
 
-    private Expense find(Long id) {
-        return repository.findById(id).orElseThrow(() -> new ExpenseNotFoundException(id));
+    /** Un gasto de otro usuario responde igual que uno inexistente (404): no se revela que existe. */
+    private Expense find(Long userId, Long id) {
+        return repository.findByIdAndUserId(id, userId).orElseThrow(() -> new ExpenseNotFoundException(id));
     }
 
     private void apply(ExpenseRequest request, Expense expense) {

@@ -1,12 +1,14 @@
 package com.misgastos.controller;
 
 import com.misgastos.dto.ApiError;
+import com.misgastos.service.ApiException;
 import com.misgastos.service.ExpenseNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -32,7 +34,20 @@ public class GlobalExceptionHandler {
         Map<String, String> errors = new LinkedHashMap<>();
         ex.getBindingResult().getFieldErrors()
                 .forEach(error -> errors.putIfAbsent(error.getField(), error.getDefaultMessage()));
-        return ResponseEntity.badRequest().body(new ApiError("Revisá los datos del gasto.", errors));
+        String message = "expenseRequest".equals(ex.getBindingResult().getObjectName())
+                ? "Revisá los datos del gasto."
+                : "Revisá los datos ingresados.";
+        return ResponseEntity.badRequest().body(new ApiError(message, errors));
+    }
+
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<ApiError> handleApi(ApiException ex) {
+        return ResponseEntity.status(ex.getStatus()).body(new ApiError(ex.getMessage(), ex.getErrors()));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiError("No tenés permiso para hacer esto."));
     }
 
     @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class,

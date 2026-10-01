@@ -1,16 +1,30 @@
-// Pantalla Ajustes: instalación, estado del servidor y preferencias.
+// Pantalla Ajustes: cuenta, instalación, estado del servidor y preferencias.
 import { api } from '../api.js';
 import { PAYMENT_METHODS } from '../categories.js';
 import { getInstallPrompt, isStandalone } from '../install.js';
-import { getPreferredPaymentMethod, setPreferredPaymentMethod } from '../state.js';
-import { icon, showToast, topBar } from '../ui.js';
+import { getCurrentUser, getPreferredPaymentMethod, setPreferredPaymentMethod } from '../state.js';
+import { escapeHtml, icon, showToast, topBar } from '../ui.js';
 import { isSpeechRecognitionSupported } from '../voice/speech-recognition-service.js';
 
 export function renderSettings(root) {
   const preferred = getPreferredPaymentMethod();
+  const user = getCurrentUser();
 
   root.innerHTML = `
     ${topBar('Ajustes')}
+
+    <section class="card">
+      <h2 class="card__title">${icon('user')}Cuenta</h2>
+      <ul class="status-list">
+        <li><span>Usuario</span><strong>${escapeHtml(user?.username)}</strong></li>
+      </ul>
+      <div class="account-actions">
+        ${user?.role === 'ADMIN'
+          ? `<a class="btn btn--soft btn--block" href="#/admin">${icon('users')}Panel de administración</a>` : ''}
+        <a class="btn btn--outline btn--block" href="#/contrasena">${icon('key')}Cambiar contraseña</a>
+        <button type="button" class="btn btn--text btn--block" data-action="logout">${icon('logout')}Cerrar sesión</button>
+      </div>
+    </section>
 
     <section class="card">
       <h2 class="card__title">${icon('download')}Aplicación</h2>
@@ -39,6 +53,16 @@ export function renderSettings(root) {
     <p class="footnote">Mis Gastos · versión 1.0<br>Tus datos se guardan en tu propio servidor.</p>`;
 
   renderInstall(root.querySelector('[data-slot="install"]'));
+
+  root.querySelector('[data-action="logout"]').addEventListener('click', async () => {
+    try {
+      await api.logout();
+    } finally {
+      // Recargar borra todo lo que quedó en memoria (por ejemplo, un gasto dictado sin confirmar).
+      location.hash = '#/ingresar';
+      location.reload();
+    }
+  });
 
   root.querySelector('#default-payment').addEventListener('change', (event) => {
     setPreferredPaymentMethod(event.target.value);
